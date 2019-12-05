@@ -1,0 +1,1 @@
+RNAseqCNAapp::launchApp()

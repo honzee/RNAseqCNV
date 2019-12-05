@@ -1,13 +1,26 @@
 Package: RNAseqCNAapp
-Title: What the Package Does (One Line, Title Case)
+Title: A package for CNA analysis from RNA-seq data in B-cell acute lymphoblastic leukaemia
 Version: 0.0.0.9000
 Authors@R: 
-    person(given = "First",
-           family = "Last",
+    person(given = "Jan",
+           family = "Barinka",
            role = c("aut", "cre"),
-           email = "first.last@example.com",
-           comment = c(ORCID = "YOUR-ORCID-ID"))
-Description: What the package does (one paragraph).
+           email = "jan.barinka@lfmotol.cuni.cz")
+Description: This package was created in order to enable analysis of copy number alterations from RNA-seq data in B-cell acute lymphoblastic leukaemia, where such alteretions are frequent.
 License: What license it uses
 Encoding: UTF-8
 LazyData: true
+Imports:
+	shiny,
+	tidyr,
+	dplyr,
+	magrittr,
+	ggplot2,
+	stringr,
+	data.table,
+	scales,
+	ggpubr,
+	DESeq2,
+	spatstat,
+	randomForest
+RoxygenNote: 7.0.2
