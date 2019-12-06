@@ -4,9 +4,6 @@
 #'
 #' @return shiny application object
 #'
-#' @example \dontrun {launchApp()}
-#'
-#'
 
 
 # wrapper for shiny::shinyApp()

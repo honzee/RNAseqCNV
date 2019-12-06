@@ -10,7 +10,6 @@
 #' @import DESeq2
 #' @importFrom spatstat weighted.median
 #' @importFrom spatstat weighted.quantile
-#' @import randomForest
 
 #### get vst values ####
 get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr) {

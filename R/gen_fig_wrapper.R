@@ -110,24 +110,24 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           #estimate gender
           s_vst_gend <- s_vst %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
-          gender = ifelse(predict(model_gender, newdata = s_vst_gend, type = "class") == 1, "male", "female")
+          gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = s_vst_gend, type = "class") == 1, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement
           if (adjust == TRUE | estimate == TRUE) {
 
             incProgress(amount = 0.05, detail = "Estimating diploid baseline")
 
-            feat_tab$chr_status <- predict(model_dipl, feat_tab, type = "class")
+            feat_tab$chr_status <- randomForest:::predict.randomForest(model_dipl, feat_tab, type = "class")
 
             feat_tab_alt <- feat_tab %>%
               filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>%
               metr_dipl()
 
-            feat_tab_alt_aut <- feat_tab_alt %>% filter(chr != "X") %>% mutate(alteration = as.character(predict(model_alt_aut, ., type = "class")))
-            feat_tab_alt_aut$alteration_prob <- apply(predict(model_alt_aut, feat_tab_alt_aut, type = "prob"), 1, max)
+            feat_tab_alt_aut <- feat_tab_alt %>% filter(chr != "X") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt_aut, ., type = "class")))
+            feat_tab_alt_aut$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt_aut, feat_tab_alt_aut, type = "prob"), 1, max)
 
-            feat_tab_alt_X <- feat_tab_alt %>% filter(chr == "X") %>% mutate(alteration = as.character(predict(model_alt_X, ., type = "class")))
-            feat_tab_alt_X$alteration_prob <- apply(predict(model_alt_X, feat_tab_alt_X, type = "prob"), 1, max)
+            feat_tab_alt_X <- feat_tab_alt %>% filter(chr == "X") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt_X, ., type = "class")))
+            feat_tab_alt_X$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt_X, feat_tab_alt_X, type = "prob"), 1, max)
 
             feat_tab_alt <- feat_tab_alt_aut %>% bind_rows(feat_tab_alt_X)
 
