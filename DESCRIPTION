@@ -22,5 +22,6 @@ Imports:
 	ggpubr,
 	DESeq2,
 	spatstat,
-	randomForest
+	randomForest,
+	matrixStats
 RoxygenNote: 7.0.2
