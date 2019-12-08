@@ -65,7 +65,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
           }
 
           #calculate vst values with DESeq2
-          vst <- get_vst(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr)
+          vst <- get_vst(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
 
           #check whether the count file is in correct format
           if (is.null(vst)) {

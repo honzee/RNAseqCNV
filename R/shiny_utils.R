@@ -12,7 +12,7 @@
 #' @importFrom spatstat weighted.quantile
 
 #### get vst values ####
-get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr) {
+get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
 
   count_file <- pull(sample_table, count_path)[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
@@ -37,10 +37,14 @@ get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr
   ddsHTSeq=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
   print("Loading HTSeq files is done!")
 
+  browser()
+
   ddsCount <- counts(ddsHTSeq)
 
-  #filter genes based on reads count; top 1-q have read count > N
-  keepIdx=apply(ddsCount, MARGIN = 1, FUN = function(x) quantile(x, q) ) >= minReadCnt
+  #filter genes based on reads count; top 1-q have read count > N and filter based on weight
+  keepIdx = as.data.frame(ddsCount) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
+    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
+
   ddsHTSeq <- ddsHTSeq[keepIdx, ]
   rldHTSeq <- varianceStabilizingTransformation(ddsHTSeq, blind=T, fitType='local')
 
@@ -223,10 +227,10 @@ plot_snv <- function(smpSNPdata, chrs, sample_name) {
       geom_text(data = peakdist_dat, aes(x, y, label = label), vjust=0)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       scale_color_identity()+
-      scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 3), minor_breaks = NULL, limits = c(0,1)) +
+      scale_x_continuous(breaks = round(c(1/3, 2/3), 3), labels = c("1/3", "2/3"), minor_breaks = NULL, limits = c(0,1)) +
       facet_grid(.~chr, scales="free_y") +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 90), axis.ticks = element_blank(),
+      theme(axis.text.x = element_text(angle = 40, vjust = 0.5), axis.ticks = element_blank(),
             strip.background = element_blank(), strip.text.x = element_blank(),
             plot.margin = unit(c(0,1,1,1), "lines"))
 
@@ -338,7 +342,7 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
       scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 3), minor_breaks = NULL, limits = c(0,1)) +
       ggtitle(paste0(plot_arm, " arm")) +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 90), axis.ticks = element_blank(),
+      theme(axis.text.x = element_text(size = 0.8), axis.ticks = element_blank(),
             strip.background = element_blank(), strip.text.x = element_blank(),
             plot.margin = unit(c(0,1,1,1), "lines"), plot.title = element_text(hjust = 0.5, size = 20))
   }
