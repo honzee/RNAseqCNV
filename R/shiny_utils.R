@@ -11,6 +11,8 @@
 #' @importFrom spatstat weighted.median
 #' @importFrom spatstat weighted.quantile
 
+#### functions for deseq norm testing ####
+
 #### get vst values ####
 get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
 
@@ -37,8 +39,6 @@ get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr
   ddsHTSeq=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
   print("Loading HTSeq files is done!")
 
-  browser()
-
   ddsCount <- counts(ddsHTSeq)
 
   #filter genes based on reads count; top 1-q have read count > N and filter based on weight
@@ -54,6 +54,47 @@ get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr
   return(vst)
 }
 
+# get deseq_normalized counts
+get_vst2 <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
+     
+   count_file <- pull(sample_table, count_path)[sample_num]
+   sample_n <- pull(sample_table, 1)[sample_num]
+   
+    #read the tables in
+    count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
+     
+    #check the count file format
+    if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
+     
+    colnames(count_table) <- sample_n
+       
+    #create coldata
+    colData = data.frame(sampleName = sample_n, fileName = count_file)
+         
+    #bind with baseline
+    final_mat <- cbind(count_table, base_matr)
+    final_col <- rbind(colData, base_col)
+    colnames(final_mat) <- as.character(final_col$sampleName)
+   
+    #calculate vst
+    ddsHTSeq=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
+    print("Loading HTSeq files is done!")
+     
+    ddsHTSeq <- estimateSizeFactors(ddsHTSeq)
+    ddsCount <- counts(ddsHTSeq)
+       
+    #filter genes based on reads count; top 1-q have read count > N and filter based on weight
+    keepIdx = as.data.frame(ddsCount) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
+      left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
+         
+    ddsHTSeq <- ddsHTSeq[keepIdx, ]
+    HTSeq_norm <- counts(ddsHTSeq, normalized = TRUE)
+           
+    print("VST transformation is done!")
+    vst = round(data.frame(HTSeq_norm, digits = 2))
+   
+    return(vst)
+}
 
 
 ####get median expression level####
@@ -143,12 +184,18 @@ remove_par <- function(s_vst, par_reg) {
 
 ####Calculate weighted boxplot values####
 get_box_wdt <- function(s_vst, chrs, scaleCols) {
-box_wdt <- s_vst %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = weighted.median(x = vst_nor_med,w = weight, na.rm = TRUE), low = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.25),
-                                                                           high = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5,
-                                                                           wdt_median_vst= specify_decimal(med_weig, 2) , medianCol=scaleCols[wdt_median_vst]) %>%
-
-    distinct(chr, .keep_all = TRUE) %>% select(chr, med_weig, low, high, min, max, medianCol) %>% ungroup() %>%
+  box_wdt <- s_vst %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = weighted.median(x = vst_nor_med,w = weight, na.rm = TRUE), low = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.25),
+                                                                                   high = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5)
+  
+  colours <- c()
+  for(i in 1:nrow(box_wdt)) {
+    colours[i] <- scaleCols_DES_norm$colour[which.min(abs(box_wdt$med_weig[i] - scaleCols_DES_norm$med_expr))]
+  }
+  
+  box_wdt <- box_wdt %>% ungroup() %>% mutate(medianCol = colours) %>% 
+    distinct(chr, .keep_all = TRUE) %>% select(chr, med_weig, low, high, min, max, medianCol) %>%
     mutate(chr = factor(x = chr, levels = c(1:22, "X")), pos = 0.5)
+  
   return(box_wdt)
 }
 
@@ -269,7 +316,7 @@ rescale_centr <- function(centr_ref, s_vst_final) {
 plot_exp_zoom <- function(s_vst_final, centr_res, plot_chr, estimate, feat_tab_alt) {
   #filter only for chromosome of interest
   s_vst_chr <- filter(s_vst_final, chr == plot_chr)
-  gg_expr_zoom = ggplot(data=s_vst_chr) + ylim(c(-0.3, 0.3)) + ylab("Normalized vst") +
+  gg_expr_zoom = ggplot(data=s_vst_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized vst") +
     geom_point(aes(x = normPos, y = vst_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
     geom_smooth(aes(x = normPos, y = vst_nor_med, weight = weight), alpha = 0.5, size = 0.5) +

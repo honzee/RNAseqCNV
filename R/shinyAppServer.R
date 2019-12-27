@@ -3,7 +3,7 @@ shinyAppServer <- function(input, output, session) {
 
   #change the size of possible upload
   options(shiny.maxRequestSize=30*1024^2)
-
+  
   #do the directories from the input exist?
   config <- reactive({
     if (!is.null(input$config)) {
@@ -125,7 +125,7 @@ shinyAppServer <- function(input, output, session) {
 
     prev_fig <- gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = TRUE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
                                 refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt_aut, model_alt_X, chrs,
-                                base_matr, base_col, scaleCols, dpRatioChrEdge)
+                                base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
 
     if (!is.null(prev_fig)) {
       output$plot_arm <- renderPlot({
@@ -146,7 +146,7 @@ shinyAppServer <- function(input, output, session) {
 
     gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = FALSE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
                     refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt_aut, model_alt_X, chrs,
-                    base_matr, base_col, scaleCols, dpRatioChrEdge)
+                    base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
 
 
     #Reload the directory for the the analysis tab to refresh
