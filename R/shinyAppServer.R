@@ -124,7 +124,7 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$preview, {
 
     prev_fig <- gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = TRUE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
-                                refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt_aut, model_alt_X, chrs,
+                                refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                                 base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
 
     if (!is.null(prev_fig)) {
@@ -145,7 +145,7 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$analyze, {
 
     gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = FALSE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
-                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt_aut, model_alt_X, chrs,
+                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                     base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
 
 

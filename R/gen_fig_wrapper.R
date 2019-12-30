@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev_chr, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt_aut, model_alt_X, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev_chr, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
 
     #Is any neccessary input missing?
     if (all(metadata == "no_input")) {showNotification("A metadata file is needed to generate a preview", duration = 5, id = "not_conf", type = "message"); return(NULL) }
@@ -123,13 +123,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
               filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>%
               metr_dipl()
 
-            feat_tab_alt_aut <- feat_tab_alt %>% filter(chr != "X") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt_aut, ., type = "class")))
-            feat_tab_alt_aut$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt_aut, feat_tab_alt_aut, type = "prob"), 1, max)
-
-            feat_tab_alt_X <- feat_tab_alt %>% filter(chr == "X") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt_X, ., type = "class")))
-            feat_tab_alt_X$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt_X, feat_tab_alt_X, type = "prob"), 1, max)
-
-            feat_tab_alt <- feat_tab_alt_aut %>% bind_rows(feat_tab_alt_X)
+            feat_tab_alt <- feat_tab_alt %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt, ., type = "class")))
+            feat_tab_alt$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt, feat_tab_alt, type = "prob"), 1, max)
 
             feat_tab_alt <- colour_code(feat_tab_alt) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 

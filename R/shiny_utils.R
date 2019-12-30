@@ -472,6 +472,9 @@ get_arm_metr <- function(s_vst, smpSNPdata, sample_name, centr_ref) {
   #calculate weighted median for every chromosome and use only 1:22
   summ_arm <- s_vst %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
     mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% group_by(chr, arm) %>%
+    
+    # get rid of 21 p arm
+    filter(!(chr == 21 & arm == "p")) %>% 
 
     mutate(medianvst_nor_med = weighted.median(x = vst_nor_med,w = weight, na.rm = TRUE),
            up_quart = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.75, na.rm = TRUE),
@@ -480,7 +483,7 @@ get_arm_metr <- function(s_vst, smpSNPdata, sample_name, centr_ref) {
     ungroup() %>% distinct(chr, arm, medianvst_nor_med, up_quart, low_quart) %>%
     left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max), by = c("chr", "arm")) %>%
 
-    mutate(chr = factor(chr, levels = c(1:22, "X", "Y")), sd = sd(medianvst_nor_med), mean_all = mean(medianvst_nor_med)) %>% ungroup() %>%
+    mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(medianvst_nor_med), mean_all = mean(medianvst_nor_med)) %>% ungroup() %>%
 
     mutate(sds_median = (medianvst_nor_med - mean_all)/sd, sds_025 = (low_quart - mean_all)/sd, sds_075 = (up_quart-mean_all)/sd,
            n_02_04 = sum(data.table::inrange(peakdist, 0.2, 0.4) & peak_m_dist > 0.08), n_04 = sum(data.table::inrange(peakdist, 0.4, 0.9) & peak_m_dist > 0.08)) %>%
