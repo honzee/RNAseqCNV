@@ -93,21 +93,18 @@ get_weights <- function(standard, count_dir, dipl_samp, metadata) {
     cor <- cor.test(x = gene_data$exp, y = as.numeric(gene_data$alteration))
     
     if (!is.null(gene_cor)) {
-      gene_cor <- rbind(gene_cor, data.frame(gene = genes[i], pearson_r = cor$estimate, p = cor$p.value))
+      gene_cor <- rbind(gene_cor, data.frame(ENSG = genes[i], pearson_r = cor$estimate, p = cor$p.value))
     } else {
       gene_cor <- data.frame(ENSG = genes[i], pearson_r = cor$estimate, p = cor$p.value)
     }
   }
   
-  #adjust p values
-  #gene_cor_adj <- cbind(gene_cor, padj = p.adjust(gene_cor$p, method = "hochberg")) %>% arrange(padj)
-  
   #get per-gene variance
-  count_all_adj_an <- count_all_adj_an %>% mutate(var = apply(select(., -ENSG, -sample, -chr, -arm, -alteration), 1, var))%>% arrange(var)
+  count_var <- count_all_adj %>% mutate(var = apply(select(., -ENSG, -chr, -arm), 1, function(x) var(x, na.rm = TRUE))) %>% arrange(var)
   
   #calculate weights
-  weight_table <- count_all_adj_an %>% right_join(gene_cor, by = "ENSG") %>% mutate(pearson_r = ifelse(gene_cor.estimate < 0.05, 0, gene_cor.estimate), pearson_r_q = pearson_r^2,   var_div_q = 1/var^2, weight = pearson_r_q*var_div_q) %>%
-    arrange(desc(weight)) %>% select(ensembl_gene_id, weight)
+  weight_table <- select(count_var, ENSG, var) %>% right_join(gene_cor, by = "ENSG") %>% mutate(pearson_r = ifelse(pearson_r < 0.05, 0, pearson_r), pearson_r_q = pearson_r^2,   var_div_q = 1/var^2, weight = pearson_r_q*var_div_q) %>%
+    arrange(desc(weight)) %>% select(ENSG, weight)
   
   return(weight_table)
 }
