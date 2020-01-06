@@ -37,8 +37,6 @@ get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr
   ddsHTSeq=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
   print("Loading HTSeq files is done!")
 
-  browser()
-
   ddsCount <- counts(ddsHTSeq)
 
   #filter genes based on reads count; top 1-q have read count > N and filter based on weight
