@@ -143,7 +143,7 @@ filter_snv <- function(one_smpSNP, keepSNP) {
 calc_chrom_lvl <- function(smpSNPdata.tmp) {
   smpSNPdata <- smpSNPdata.tmp %>% group_by(chr) %>% arrange(chr, desc(depth) ) %>%
     mutate(snvOrd=1:n()) %>% filter(snvOrd<=1000) %>%
-    mutate(snvNum=n(), densityMaxY=densityMaxY(maf),
+    mutate(snvNum=n(), peak_max=densityMaxY(maf),
            peak=findPeak(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red'), peakdist = find_peak_dist(maf)) %>%
    ungroup() %>% mutate(chr = factor(chr, levels = c(1:22, "X")))
   return(smpSNPdata)
@@ -152,7 +152,7 @@ calc_chrom_lvl <- function(smpSNPdata.tmp) {
 ####Calculate peak statistics for arms separately#s###
 calc_arm_lvl <- function(smpSNPdata.tmp) {
   smpSNPdata_a=smpSNPdata.tmp %>% group_by(chr, arm) %>% arrange(chr, desc(depth) ) %>%
-    mutate(snvNum=n(), densityMaxY=densityMaxY(maf),
+    mutate(snvNum=n(), peak_max=densityMaxY(maf),
            peak=findPeak(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red'), peakdist = find_peak_dist(maf)) %>%
     ungroup() %>% mutate(chr = factor(chr, levels = c(1:22, "X")))
   return(smpSNPdata_a)
@@ -258,14 +258,14 @@ plot_snv <- function(smpSNPdata, chrs, sample_name) {
   missedChr=c(1:22, "X")[!c(1:22, "X") %in% smpSNPdata$chr]
   if(length(missedChr) > 0){
     tmpSNPdata=data.frame(sampleID = sample_name, ID=paste0(missedChr, "-1"), maf=0.5, chr=factor(missedChr, levels = chrs), start=1,
-                          depth=100, snvOrd=1, snvNum=1, densityMaxY=0, peak=0, peakCol="red", stringsAsFactors = F)
+                          depth=100, snvOrd=1, snvNum=1, peak_max=0, peak=0, peakCol="red", stringsAsFactors = F)
     smpSNPdata = bind_rows(smpSNPdata, tmpSNPdata)
   }
   if(nrow(smpSNPdata)<500){
     gp.maf=ggplot()+annotate("text", x = 1, y = 1, label = "No MAF plot. Less than 1k SNVs!")+theme_void()
   }else{
-    snvNumDensityMaxY=smpSNPdata %>% select(chr, snvNum, densityMaxY, peakdist) %>% unique()
-    yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$densityMaxY %>% max()
+    snvNumDensityMaxY=smpSNPdata %>% select(chr, snvNum, peak_max, peakdist) %>% unique()
+    yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$peak_max %>% max()
     snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05, label=paste0("n=", snvNum))
     peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
     gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") + ylim(0, yAxisMax*1.2) +
@@ -356,7 +356,7 @@ plot_exp_zoom <- function(s_vst_final, centr_res, plot_chr, estimate, feat_tab_a
 get_yAxisMax <- function(smpSNPdata, plot_chr) {
 
   smpSNP_chr <- smpSNPdata %>% filter(chr == plot_chr)
-  yAxisMax <- smpSNP_chr %>% select(snvNum, densityMaxY, peakdist) %>% unique() %>% .$densityMaxY %>% max()
+  yAxisMax <- smpSNP_chr %>% select(snvNum, peak_max, peakdist) %>% unique() %>% .$peak_max %>% max()
   return(yAxisMax)
 
 }
@@ -366,7 +366,7 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
 
   smpSNP_arm <- filter(smpSNPdata_a, chr == plot_chr, arm == plot_arm)
 
-  SNP_ann <- smpSNP_arm %>% select(chr, snvNum, densityMaxY, peakdist) %>% unique()
+  SNP_ann <- smpSNP_arm %>% select(chr, snvNum, peak_max, peakdist) %>% unique()
 
   snvNumDF = SNP_ann %>% mutate(x=0.5, y=yAxisMax*1.05, label=paste0("n=", snvNum))
   peakdist_dat = SNP_ann %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
@@ -499,7 +499,7 @@ calc_arm <- function(smpSNPdata.tmp) {
   smpSNPdata <- smpSNPdata.tmp %>% group_by(chr, arm) %>% arrange(chr, desc(depth) ) %>%
     mutate(snvOrd=1:n()) %>%
     mutate(snvNum=n(), peak_max=densityMaxY(maf),
-           peak=findPeak(maf), peak_m_dist = abs(peak - 0.5), peakdist = find_peak_dist(maf)) %>%
+           peak=findPeak(maf), peak_m_dist = abs(peak - 0.5), peakdist = find_peak_dist(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red')) %>%
     ungroup() %>% mutate(chr = factor(chr, levels = c(1:22, "X", "Y")))
   return(smpSNPdata)
 }
