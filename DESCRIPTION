@@ -1,5 +1,5 @@
-Package: RNAseqCNAapp
-Title: A package for CNA analysis from RNA-seq data in B-cell acute lymphoblastic leukaemia
+Package: RNAseqCNVapp
+Title: A package for CNV analysis from RNA-seq data in B-cell acute lymphoblastic leukaemia
 Version: 0.0.0.9000
 Authors@R: 
     person(given = "Jan",
