@@ -4,6 +4,7 @@
 #'
 #' @param config R script assigning variables needed for the analysis
 #' @param metadata path to a metadata table with three columns. First colum represents sample names, second file names of count files, third file names of snv files.
+#' @export
 RNAseqCNA_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt, chroms = chrs, base_matrix = base_matr, base_column = base_col, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
 
   #Check the format

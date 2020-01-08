@@ -3,7 +3,7 @@
 To download the package from gitub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
 ```
 library(devtools)
-install_github(repo = "honzee/RNAseqCNAapp")
+install_github(repo = "honzee/RNAseqCNVapp")
 ```
 
 ## Input
@@ -54,7 +54,7 @@ snv_dir = "C:/Users/honza/Dropbox/St.Jude files/snv"
 To run the shiny app, first load the RNAseqCNVapp package and then call function: launchApp()
 
 ```
-library(RNAseqCNAapp)
+library(RNAseqCNVapp)
 
 launchApp()
 ```
@@ -65,6 +65,6 @@ In the app itself, load your metadata file and config file and then you should b
 The analysis has a wrapper, that allows to analyse the samples without running the shiny app. The two compuylsory parameters are config and metadata.
 
 ```
-RNAseqCNA_wrapper(config = "/some/config", metadata = "some/metadata")
+RNAseqCNV_wrapper(config = "/some/config", metadata = "some/metadata")
 ```
 

@@ -218,7 +218,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           if (preview == FALSE) {
 
-            ggsave(plot = fig, filename = paste0(config["out_dir"], "/", sample_name, "_CNA_fig.png"), device = 'png', width = 16, height = 10)
+            ggsave(plot = fig, filename = paste0(config["out_dir"], "/", sample_name, "_CNV_fig.png"), device = 'png', width = 16, height = 10)
 
             writeLines(c(readLines(log), paste("Sample", sample_name, "analyzed successfully")), con = log)
 

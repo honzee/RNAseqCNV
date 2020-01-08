@@ -112,7 +112,6 @@ get_med <- function(vst, refDataExp) {
 
 ####prepare snv files####
 prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs) {
-
   header <- c("chr", "start", "ref", 'var', 'end', 'qual', 'depth', 'refDp', 'varDp', 'mapQ', "maf")
 
   snv_file <- pull(sample_table, snv_path)[sample_num]
@@ -319,7 +318,7 @@ plot_exp_zoom <- function(s_vst_final, centr_res, plot_chr, estimate, feat_tab_a
   gg_expr_zoom = ggplot(data=s_vst_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized vst") +
     geom_point(aes(x = normPos, y = vst_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
-    geom_smooth(aes(x = normPos, y = vst_nor_med, weight = weight), alpha = 0.5, size = 0.5) +
+    geom_smooth(aes(x = normPos, y = vst_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
     annotate("segment", x = 0, xend = 1, y = 0, yend = 0,
              colour = "red", alpha = 0.85) +
     scale_x_continuous(expand = c(0,0)) +
