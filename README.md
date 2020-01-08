@@ -5,14 +5,10 @@ date: "January 7, 2020"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
-## RNAseqCNA(V)app tutorial for Zhaohui (will finish tomorrow)
+# RNAseqCNA(V)app tutorial for Zhaohui
 
 To download the package from gitub, use devtools functions.
-```{r install package, eval=FALSE}
+```
 library(devtools)
 install_github(repo = "honzee/RNAseqCNAapp")
 ```
@@ -22,7 +18,7 @@ To run the app or wrapper, config file and metadata file is needed.
 
 Metadata parameter is a path to a file containing a table with three columns. The first column with sample names, the second with count file names and the third snv file names.
 
-```{r metadata, echo = FALSE}
+```
 # Can be saved and used for testing purpouses
 structure(list(sample = c("SJALL014946_D1", "SJALL014949_D1", 
 "SJALL014950_D1", "SJALL014951_D1", "SJALL014954_D1", "SJALL015619_D1", 
@@ -39,9 +35,7 @@ structure(list(sample = c("SJALL014946_D1", "SJALL014949_D1",
 ```
 
 Config file parameter is a path to an R script defining paths needed for the analysis. An example of a script below:
-```{r config, echo =TRUE, eval=FALSE}
-#NOT RUN
-
+```
 out_dir = "C:/Users/honza/Dropbox/St.Jude files/shiny/output_test"
 count_dir = "C:/Users/honza/Dropbox/St.Jude files/HTSeq"
 snv_dir = "C:/Users/honza/Dropbox/St.Jude files/snv"
@@ -53,7 +47,7 @@ snv_dir = "C:/Users/honza/Dropbox/St.Jude files/snv"
 
 To run the shiny app:
 
-```{r launch shiny app, eval = FALSE}
+```
 library(RNAseqCNAapp)
 
 launchApp()
@@ -63,8 +57,7 @@ launchApp()
 
 The analysis has also a wrapper
 
-```{r run the wrapper, eval = FALSE}
-# NOT RUN
+```
 RNAseqCNA_wrapper(config = "/some/config", metadata = "some/metadata")
 ```
 
