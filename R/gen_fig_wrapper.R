@@ -47,9 +47,9 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
         incProgress(amount = 1/samples, message = paste0("Analyzing sample: ", sample_name))
 
         #Run with secondary progress indicator
-        withProgress(message = "Currently:", detail = "Calculating vst values", value = 0, {
+        withProgress(message = "Currently:", value = 0, {
 
-          incProgress(amount = 0.15, detail = "Prepring SNV data")
+          incProgress(amount = 0.15, detail = "Prepring SNV and count data")
 
           #load SNP data
           smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chrs)
@@ -64,11 +64,11 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
               }
           }
           
-          #calculate vst values with DESeq2
-          vst <- get_vst2(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
+          #calculate noemalized count values with DESeq2
+          count_norm <- get_norm_exp(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
 
           #check whether the count file is in correct format
-          if (is.null(vst)) {
+          if (is.null(count_norm)) {
             if (preview == FALSE) {
               writeLines(c(readLines(log), paste("File", sample_table$count_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
               incProgress(amount = 1/nrow(sample_table), message = "File skipped")
@@ -79,10 +79,10 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
           }
 
 
-          incProgress(amount = 0.5, detail = "Calculating medians of vst values")
+          incProgress(amount = 0.5, detail = "Calculating expression medians for each gene")
 
           #calculate medians for analyzed genes
-          pickGeneDFall <- get_med(vst = vst, refData = refData)
+          pickGeneDFall <- get_med(count_norm = count_norm, refData = refData)
 
           #filter SNP data base on dpSNP database
           smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keepSNP)
@@ -98,19 +98,19 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           incProgress(amount = 0.1, detail = "Prepring expression data")
 
-          s_vst <- select(vst, !!quo(sample_name)) %>% mutate(ENSG = rownames(vst))
+          count_ns <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
           #join reference data and weight data
-          s_vst <- vst_norm(s_vst = s_vst, pickGeneDFall, refData, weight_table)
+          count_ns <- count_transform(count_ns = count_ns, pickGeneDFall, refData, weight_table)
 
           #remove PAR regions
-          s_vst <- remove_par(s_vst = s_vst, par_reg = par_reg)
+          count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
 
-          feat_tab <- get_arm_metr(s_vst = s_vst, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
+          feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
 
           #estimate gender
-          s_vst_gend <- s_vst %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
-          gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = s_vst_gend, type = "class") == 1, "male", "female")
+          count_ns_gend <- count_ns %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+          gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement
           if (adjust == TRUE | estimate == TRUE) {
@@ -151,26 +151,26 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
           #adjust for diploid level
           if (adjust == TRUE) {
             incProgress(amount = 0.05, detail = "Adjusting for diploid level")
-            s_vst <-  adjust_dipl(feat_tab_alt, s_vst)
+            count_ns <-  adjust_dipl(feat_tab_alt, count_ns)
           } else {
             incProgress(amount = 0.05)
           }
 
           #calculate box plots for plotting
-          box_wdt <- get_box_wdt(s_vst = s_vst, chrs = chrs, scaleCols = scaleCols)
+          box_wdt <- get_box_wdt(count_ns = count_ns, chrs = chrs, scaleCols = scaleCols)
 
           #adjust y axis limits
           ylim <- adjust_ylim(box_wdt = box_wdt, ylim = c(-0.4, 0.4))
 
-          s_vst_final <- prep_expr(s_vst = s_vst, dpRatioChrEdge = dpRatioChrEdge, ylim = ylim, chrs = chrs)
+          count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChrEdge, ylim = ylim, chrs = chrs)
 
           if(arm_lvl == TRUE) {
 
-            centr_res <- rescale_centr(centr_ref, s_vst_final)
+            centr_res <- rescale_centr(centr_ref, count_ns_final)
 
           }
 
-          s_vst_final <- filter_expr(s_vst_final = s_vst_final, cutoff = 0.6)
+          count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
 
           #plot arm-level figures
           if(arm_lvl == TRUE) {
@@ -186,7 +186,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
             for (i in chr_to_plot) {
 
-              gg_exp_zoom <- plot_exp_zoom(s_vst_final = s_vst_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
+              gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
 
               yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata_a, plot_chr = i)
 
@@ -210,7 +210,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           incProgress(amount = 0.02, detail = "Plotting main figure")
 
-          gg_exp <- plot_exp(s_vst_final = s_vst_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate, feat_tab_alt = feat_tab_alt)
+          gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate, feat_tab_alt = feat_tab_alt)
 
           gg_snv <- plot_snv(smpSNPdata, chrs = chrs, sample_name = sample_name)
 

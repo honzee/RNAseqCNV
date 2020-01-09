@@ -16,7 +16,7 @@
 #### get vst values ####
 get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
 
-  count_file <- pull(sample_table, count_path)[sample_num]
+  count_file <- pull(sample_table, "count_path")[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
 
   #read the tables in
@@ -55,55 +55,56 @@ get_vst <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr
 }
 
 # get deseq_normalized counts
-get_vst2 <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
+get_norm_exp <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
      
-   count_file <- pull(sample_table, count_path)[sample_num]
+  #extract file names from sample table
+   count_file <- pull(sample_table, "count_path")[sample_num]
    sample_n <- pull(sample_table, 1)[sample_num]
    
-    #read the tables in
-    count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
-     
-    #check the count file format
-    if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
-     
-    colnames(count_table) <- sample_n
-       
-    #create coldata
-    colData = data.frame(sampleName = sample_n, fileName = count_file)
-         
-    #bind with baseline
-    final_mat <- cbind(count_table, base_matr)
-    final_col <- rbind(colData, base_col)
-    colnames(final_mat) <- as.character(final_col$sampleName)
+  #read the count table
+  count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
    
-    #calculate vst
-    ddsHTSeq=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
-    print("Loading HTSeq files is done!")
-     
-    ddsHTSeq <- estimateSizeFactors(ddsHTSeq)
-    ddsCount <- counts(ddsHTSeq)
-       
-    #filter genes based on reads count; top 1-q have read count > N and filter based on weight
-    keepIdx = as.data.frame(ddsCount) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
-      left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
-         
-    ddsHTSeq <- ddsHTSeq[keepIdx, ]
-    HTSeq_norm <- counts(ddsHTSeq, normalized = TRUE)
-           
-    print("VST transformation is done!")
-    vst = round(data.frame(HTSeq_norm, digits = 2))
+  #check the count file format
+  if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
    
-    return(vst)
+  colnames(count_table) <- sample_n
+     
+  #create coldata
+  colData = data.frame(sampleName = sample_n, fileName = count_file)
+       
+  #bind with baseline
+  final_mat <- cbind(count_table, base_matr)
+  final_col <- rbind(colData, base_col)
+  colnames(final_mat) <- as.character(final_col$sampleName)
+ 
+  #calculate vst
+  ddsCount=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
+  print("Loading count files is done!")
+   
+  ddsCount <- estimateSizeFactors(ddsCount)
+  count_mat <- counts(ddsCount)
+     
+  #filter genes based on reads count; top 1-q have read count > N and filter based on weight
+  keepIdx = as.data.frame(count_mat) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
+    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
+       
+  ddsCount <- ddsCount[keepIdx, ]
+  count_norm <- counts(ddsCount, normalized = TRUE)
+         
+  print(paste0("Normalization for sample: ", sample_n, " completed"))
+  count_norm = round(data.frame(count_norm, digits = 2))
+ 
+  return(count_norm)
 }
 
 
 ####get median expression level####
-get_med <- function(vst, refDataExp) {
+get_med <- function(count_norm, refDataExp) {
 
-  ENSG=rownames(vst)
+  ENSG=rownames(count_norm)
 
   ####calculate median for all genes####
-  pickGeneDFall=vst %>% mutate(ENSG=ENSG) %>% left_join(select(refDataExp, chr, ENSG), by = "ENSG") %>%
+  pickGeneDFall=count_norm %>% mutate(ENSG=ENSG) %>% left_join(select(refDataExp, chr, ENSG), by = "ENSG") %>%
     mutate(med= ifelse(chr != "Y", apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median), apply(.[, -c(ncol(.) - 1, ncol(.))], 1, function(x) quantile(x = x, 0.60)))) %>%
     select(ENSG, med)
 
@@ -157,34 +158,34 @@ calc_arm_lvl <- function(smpSNPdata.tmp) {
   return(smpSNPdata_a)
 }
 
-####calculate normalized vst values and join weight values####
+####normalize normalized counts (against median of expression for each gene) and join weight values####
 #beta-needs cleaning
-vst_norm <- function(s_vst, pickGeneDFall, refDataExp, weight_tab_q) {
-  s_vst_tmp= s_vst %>% left_join(pickGeneDFall, by = "ENSG") %>%
-    mutate(vst_nor_med=log2(.[, 1] / med) )
-  sENSGinfor=refDataExp[match(s_vst_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
+count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_tab_q) {
+  count_ns_tmp = count_ns %>% left_join(pickGeneDFall, by = "ENSG") %>%
+    mutate(count_nor_med=log2(.[, 1] / med) )
+  sENSGinfor=refDataExp[match(count_ns_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
 
   #keeping only the genes which have weights calculated for geom_poit and boxplot
-  s_vst = cbind(sENSGinfor, s_vst_tmp) %>% left_join(weight_tab_q, by = "ENSG")
-  return(s_vst)
+  count_ns = cbind(sENSGinfor, count_ns_tmp) %>% left_join(weight_tab_q, by = "ENSG")
+  return(count_ns)
 }
 
 ####filter out par regions####
-remove_par <- function(s_vst, par_reg) {
+remove_par <- function(count_ns, par_reg) {
   #### get rid of PAR regions
 
   parX = filter(par_reg, chr == "X")
-  s_vst = s_vst %>% filter(chr != "X" | ! data.table::inrange(start, parX[1, 1], parX[1, 2]) & ! data.table::inrange(start, parX[2, 1], parX[2, 2]) &
+  count_ns = count_ns %>% filter(chr != "X" | ! data.table::inrange(start, parX[1, 1], parX[1, 2]) & ! data.table::inrange(start, parX[2, 1], parX[2, 2]) &
                                  ! data.table::inrange(end, parX[1, 1], parX[1, 2]) & !  data.table::inrange(end, parX[2, 1], parX[2, 2]))
   parY = filter(par_reg, chr == "Y")
-  s_vst = s_vst %>% filter(chr != "Y" | ! data.table::inrange(start, parY[1, 1], parY[1, 2]) & ! data.table::inrange(start, parY[2, 1], parY[2, 2]) &
+  count_ns = count_ns %>% filter(chr != "Y" | ! data.table::inrange(start, parY[1, 1], parY[1, 2]) & ! data.table::inrange(start, parY[2, 1], parY[2, 2]) &
                              ! data.table::inrange(end, parY[1, 1], parY[1, 2]) & !  data.table::inrange(end, parY[2, 1], parY[2, 2]))
 }
 
 ####Calculate weighted boxplot values####
-get_box_wdt <- function(s_vst, chrs, scaleCols) {
-  box_wdt <- s_vst %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = weighted.median(x = vst_nor_med,w = weight, na.rm = TRUE), low = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.25),
-                                                                                   high = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5)
+get_box_wdt <- function(count_ns, chrs, scaleCols) {
+  box_wdt <- count_ns %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = weighted.median(x = count_nor_med,w = weight, na.rm = TRUE), low = weighted.quantile(x = count_nor_med, w = weight, probs = 0.25),
+                                                                                   high = weighted.quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5)
   
   colours <- c()
   for(i in 1:nrow(box_wdt)) {
@@ -212,24 +213,24 @@ adjust_ylim <- function(box_wdt, ylim) {
 }
 
 ####Add edge datapoint and normalize point position and filter for low weight genes####
-prep_expr <- function(s_vst, dpRatioChrEdge, ylim, chrs) {
-  s_vst_final= s_vst %>% select(chr, end, vst_nor_med, weight) %>%
-    bind_rows(dpRatioChrEdge) %>% filter(chr %in% c(1:22, "X"), between(vst_nor_med, ylim[1], ylim[2]) ) %>%
+prep_expr <- function(count_ns, dpRatioChrEdge, ylim, chrs) {
+  count_ns_final= count_ns %>% select(chr, end, count_nor_med, weight) %>%
+    bind_rows(dpRatioChrEdge) %>% filter(chr %in% c(1:22, "X"), between(count_nor_med, ylim[1], ylim[2]) ) %>%
     mutate(chr=factor(chr, levels=chrs)) %>%
     arrange(chr, end) %>% group_by(chr) %>%
     mutate(normPos=scales::rescale(end, from = range(end, na.rm = TRUE)))
-  return(s_vst_final)
+  return(count_ns_final)
 }
 
-filter_expr <- function(s_vst_final, cutoff = 0.6) {
-  s_vst_final <- s_vst_final %>% filter(weight > quantile(weight, cutoff, na.rm = TRUE))
+filter_expr <- function(count_ns_final, cutoff = 0.6) {
+  count_ns_final <- count_ns_final %>% filter(weight > quantile(weight, cutoff, na.rm = TRUE))
 }
 
 ####plot expression boxplot and point plot####
-plot_exp <- function(s_vst_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt) {
+plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt) {
   gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized vst") + ggtitle(paste0(sample_name)) +
     scale_fill_identity()+
-    geom_point(data = s_vst_final, aes(x = normPos, y = vst_nor_med, size = weight), alpha = 0.32)+
+    geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32)+
     scale_size(range = c(2, 6)) +
     #scale_alpha(range = c(0.22, 0.4)) +
     geom_boxplot(data = box_wdt, aes(ymin = min, lower = low, middle = med_weig, upper = high, ymax = max, fill=medianCol, x = pos), alpha=0.75, outlier.colour = NA, stat = "identity")+
@@ -293,9 +294,9 @@ arrange_plots <- function(gg_exp, gg_snv) {
 
 ####arm level utilities####
 #### rescale centromeric region ####
-rescale_centr <- function(centr_ref, s_vst_final) {
-  s_vst_range <- s_vst_final %>% group_by(chr) %>% summarise(chr_end = max(end)) %>% mutate(chr_start = 1)
-  centr_res <- centr_ref %>% filter(chr != "Y") %>% left_join(s_vst_range, by = "chr") %>% mutate(p_mid = cstart/2, q_mid = cend + (chr_end - cend)/2)
+rescale_centr <- function(centr_ref, count_ns_final) {
+  count_ns_range <- count_ns_final %>% group_by(chr) %>% summarise(chr_end = max(end)) %>% mutate(chr_start = 1)
+  centr_res <- centr_ref %>% filter(chr != "Y") %>% left_join(count_ns_range, by = "chr") %>% mutate(p_mid = cstart/2, q_mid = cend + (chr_end - cend)/2)
   rescaled <- data.frame(cstartr = c(), cendr = c(), p_midr = c(), q_midr = c())
 
   for (i in 1:nrow(centr_res)) {
@@ -312,13 +313,13 @@ rescale_centr <- function(centr_ref, s_vst_final) {
 }
 
 ####draw zoomed in expression graph####
-plot_exp_zoom <- function(s_vst_final, centr_res, plot_chr, estimate, feat_tab_alt) {
+plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_tab_alt) {
   #filter only for chromosome of interest
-  s_vst_chr <- filter(s_vst_final, chr == plot_chr)
-  gg_expr_zoom = ggplot(data=s_vst_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized vst") +
-    geom_point(aes(x = normPos, y = vst_nor_med, size = weight), alpha=0.6) +
+  count_ns_chr <- filter(count_ns_final, chr == plot_chr)
+  gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized vst") +
+    geom_point(aes(x = normPos, y = count_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
-    geom_smooth(aes(x = normPos, y = vst_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
+    geom_smooth(aes(x = normPos, y = count_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
     annotate("segment", x = 0, xend = 1, y = 0, yend = 0,
              colour = "red", alpha = 0.85) +
     scale_x_continuous(expand = c(0,0)) +
@@ -453,42 +454,42 @@ densityMaxY <- function(vec){
 }
 
 ####adjust for diploid level based on diploid chromosomes####
-adjust_dipl <- function(feat_tab_alt, s_vst) {
+adjust_dipl <- function(feat_tab_alt, count_ns) {
 
   if (sum(feat_tab_alt$chr_status == "dipl") < 1) {
     print("Unable to adjust expression level")
-    return(s_vst)
+    return(count_ns)
   }
 
-  baseline_shift = median(feat_tab_alt$medianvst_nor_med[feat_tab_alt$chr_status == "dipl"])
-  s_vst$vst_nor_med <- s_vst$vst_nor_med - baseline_shift
-  return(s_vst)
+  baseline_shift = median(feat_tab_alt$arm_med[feat_tab_alt$chr_status == "dipl"])
+  count_ns$count_nor_med <- count_ns$count_nor_med - baseline_shift
+  return(count_ns)
 }
 
 ####get arm metrics####
-get_arm_metr <- function(s_vst, smpSNPdata, sample_name, centr_ref) {
+get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref) {
 
   #calculate weighted median for every chromosome and use only 1:22
-  summ_arm <- s_vst %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
+  summ_arm <- count_ns %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
     mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% group_by(chr, arm) %>%
     
     # get rid of 21 p arm
     filter(!(chr == 21 & arm == "p")) %>% 
 
-    mutate(medianvst_nor_med = weighted.median(x = vst_nor_med,w = weight, na.rm = TRUE),
-           up_quart = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.75, na.rm = TRUE),
-           low_quart = weighted.quantile(x = vst_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
+    mutate(arm_med = weighted.median(x = count_nor_med,w = weight, na.rm = TRUE),
+           up_quart = weighted.quantile(x = count_nor_med, w = weight, probs = 0.75, na.rm = TRUE),
+           low_quart = weighted.quantile(x = count_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
 
-    ungroup() %>% distinct(chr, arm, medianvst_nor_med, up_quart, low_quart) %>%
+    ungroup() %>% distinct(chr, arm, arm_med, up_quart, low_quart) %>%
     left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max), by = c("chr", "arm")) %>%
 
-    mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(medianvst_nor_med), mean_all = mean(medianvst_nor_med)) %>% ungroup() %>%
+    mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(arm_med), mean_all = mean(arm_med)) %>% ungroup() %>%
 
-    mutate(sds_median = (medianvst_nor_med - mean_all)/sd, sds_025 = (low_quart - mean_all)/sd, sds_075 = (up_quart-mean_all)/sd,
+    mutate(sds_median = (arm_med - mean_all)/sd, sds_025 = (low_quart - mean_all)/sd, sds_075 = (up_quart-mean_all)/sd,
            n_02_04 = sum(data.table::inrange(peakdist, 0.2, 0.4) & peak_m_dist > 0.08), n_04 = sum(data.table::inrange(peakdist, 0.4, 0.9) & peak_m_dist > 0.08)) %>%
 
     arrange(chr) %>%
-    select(chr, arm, medianvst_nor_med, up_quart, low_quart, peak_max, peak_m_dist, peakdist, sd, sds_median, sds_025, sds_075, n_02_04, n_04)
+    select(chr, arm, arm_med, up_quart, low_quart, peak_max, peak_m_dist, peakdist, sd, sds_median, sds_025, sds_075, n_02_04, n_04)
   return(summ_arm)
 
 }
@@ -512,10 +513,10 @@ metr_dipl <- function(data) {
     sd_chr = "no_dipl"
   }
 
-  sd_dipl <- data %>% filter(chr_status == sd_chr) %>% mutate(sd_dipl = sd(medianvst_nor_med)) %>% pull(sd_dipl) %>% unique()
-  mean_dipl <- data %>% filter(chr_status == "dipl") %>% mutate(mean_dipl = mean(medianvst_nor_med)) %>% pull(mean_dipl) %>% unique()
+  sd_dipl <- data %>% filter(chr_status == sd_chr) %>% mutate(sd_dipl = sd(arm_med)) %>% pull(sd_dipl) %>% unique()
+  mean_dipl <- data %>% filter(chr_status == "dipl") %>% mutate(mean_dipl = mean(arm_med)) %>% pull(mean_dipl) %>% unique()
 
-  data_mod <- data %>% mutate(sd_dipl = sd_dipl, mean_dipl = mean_dipl, sds_median_dipl = (medianvst_nor_med - mean_dipl)/sd_dipl, sds_025_dipl = (low_quart - mean_dipl)/sd_dipl, sds_075_dipl = (up_quart-mean_dipl)/sd_dipl)
+  data_mod <- data %>% mutate(sd_dipl = sd_dipl, mean_dipl = mean_dipl, sds_median_dipl = (arm_med - mean_dipl)/sd_dipl, sds_025_dipl = (low_quart - mean_dipl)/sd_dipl, sds_075_dipl = (up_quart-mean_dipl)/sd_dipl)
 
   return(data_mod)
 }
