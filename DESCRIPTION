@@ -10,6 +10,7 @@ Description: This package was created in order to enable analysis of copy number
 License: What license it uses
 Encoding: UTF-8
 LazyData: true
+biocViews:
 Imports:
 	shiny,
 	tidyr,
