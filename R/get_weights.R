@@ -19,7 +19,7 @@ get_weights <- function(standard, count_dir, dipl_samp, metadata) {
   
   # normalize all samples from the standard
   count_all <- c()
-  for (i in 1:3) {
+  for (i in 1:nrow(standard)) {
     
     if (! unique(standard$sample)[i] %in% dipl_samp) {
   
@@ -32,18 +32,18 @@ get_weights <- function(standard, count_dir, dipl_samp, metadata) {
       final_col <- rbind(data.frame(sampleName = unique(standard$sample)[i]), base_col)
       
       #create DESeqDataSet object
-      ddsHTSeq = DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
+      ddsCount = DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
       print("Loading count files is done!")
       
       #normalize
-      ddsHTSeq <- estimateSizeFactors(ddsHTSeq)
-      ddsCount <- counts(ddsHTSeq, normalized = TRUE)
+      ddsCount <- estimateSizeFactors(ddsCount)
+      count_norm <- counts(ddsCount, normalized = TRUE)
       
       if (!is.null(count_all)) {
-        count_all <- cbind(count_all, ddsCount[, 1])
+        count_all <- cbind(count_all, count_norm[, 1])
         colnames(count_all)[ncol(count_all)] <- as.character(final_col$sampleName[1])
       } else {
-        count_all <- data.frame(ddsCount)
+        count_all <- data.frame(count_norm)
         colnames(count_all) <- as.character(final_col$sampleName)
       }
     }

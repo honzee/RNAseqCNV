@@ -17,10 +17,10 @@ get_train_dat <- function(config, metadata, weight_table, standard) {
   #create sample_table
   sample_table <- metadata
   
-  HTSeq_f = pull(sample_table, 2)
+  count_f = pull(sample_table, 2)
   snv_f = pull(sample_table, 3)
   #create paths to the files
-  sample_table$count_path <- file.path(count_dir, HTSeq_f)
+  sample_table$count_path <- file.path(count_dir, count_f)
   sample_table$snv_path <-  file.path(snv_dir, snv_f)
   
   #training data frame
@@ -29,9 +29,9 @@ get_train_dat <- function(config, metadata, weight_table, standard) {
   for (i in 1:nrow(sample_table)) {
     
     # normalize gene expression
-    vst <- get_vst2(sample_table = sample_table, minReadCnt = 30, q = 0.9, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 1)
+    vst <- get_norm_exp(sample_table = sample_table, minReadCnt = 30, q = 0.9, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 1)
     
-    pickGeneDFall <- get_med(vst = vst, refDataExp = refDataExp)
+    pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = refDataExp)
     
     smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = 20, chrs = chrs)
     
@@ -43,15 +43,15 @@ get_train_dat <- function(config, metadata, weight_table, standard) {
     
     sample_name <- as.character(sample_table[i, 1])
     
-    s_vst <- select(vst, !!quo(sample_name)) %>% mutate(ENSG = rownames(vst))
+    count_ns <- select(vst, !!quo(sample_name)) %>% mutate(ENSG = rownames(vst))
     
     #join reference data and weight data
-    s_vst <- vst_norm(s_vst = s_vst, pickGeneDFall, refDataExp, weight_table)
+    count_ns <- count_transform(count_ns = count_ns, pickGeneDFall, refData, weight_table)
     
     #remove PAR regions
-    s_vst <- remove_par(s_vst = s_vst, par_reg = par_reg)
+    count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
     
-    summ_arm_train <- get_arm_metr(s_vst = s_vst, smpSNPdata = smpSNPdata, sample_name = sample_name, centr_ref = centr_ref)
+    summ_arm_train <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata, sample_name = sample_name, centr_ref = centr_ref)
     
     # merge with standard
     train_s = cbind(sample = sample_name, summ_arm_train) %>% mutate(chr = as.character(chr))
