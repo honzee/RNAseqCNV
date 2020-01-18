@@ -3,7 +3,7 @@ shinyAppServer <- function(input, output, session) {
 
   #change the size of possible upload
   options(shiny.maxRequestSize=30*1024^2)
-  
+
   #do the directories from the input exist?
   config <- reactive({
     if (!is.null(input$config)) {
@@ -125,7 +125,7 @@ shinyAppServer <- function(input, output, session) {
 
     prev_fig <- gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = TRUE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
                                 refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                                base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
+                                base_matr, base_col, scaleCols, dpRatioChrEdge)
 
     if (!is.null(prev_fig)) {
       output$plot_arm <- renderPlot({
@@ -203,11 +203,11 @@ shinyAppServer <- function(input, output, session) {
   #list all figures in output directory
   fig_sam <- reactive({
 
-    figs = list.files(path = config()["out_dir"], pattern = "_CNA_fig.png")
+    figs = sub(".*/", "", list.files(path = config()["out_dir"], pattern = "_CNV_main_fig.png", recursive = TRUE, full.names = FALSE))
 
     if(length(figs) == 0) return(NULL)
 
-    fig_sam <- sub("_CNA_fig.png", "", figs)
+    fig_sam <- sub("_CNV_main_fig.png", "", figs)
     return(fig_sam)
 
   })
@@ -253,7 +253,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render image based on the select button####
   output$main_fig <- renderImage({
-    list(src = paste0(config()["out_dir"], "/", input$sel_sample, "_CNA_fig.png"),
+    list(src = paste0(config()["out_dir"], "/", input$sel_sample, "/", input$sel_sample,  "_CNV_main_fig.png"),
          contentType = "image/png",
          width = "100%",
          height = "auto"

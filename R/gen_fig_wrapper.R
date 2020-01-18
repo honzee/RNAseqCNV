@@ -63,7 +63,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
                 return(showNotification("Incorrect format of snv file", duration = 5, id = "incorrect_snv_format", type = "message"))
               }
           }
-          
+
           #calculate noemalized count values with DESeq2
           count_norm <- get_norm_exp(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
 
@@ -100,13 +100,13 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           count_ns <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
-          #join reference data and weight data
+          #join reference data and weight datacount_trans
           count_ns <- count_transform(count_ns = count_ns, pickGeneDFall, refData, weight_table)
 
           #remove PAR regions
           count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
 
-          feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
+          feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
           #estimate gender
           count_ns_gend <- count_ns %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
@@ -178,7 +178,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
             incProgress(amount = 0.08, detail = "Plotting chromosomes in detail")
 
             if (preview == FALSE) {
-              dir.create(path = paste0(config["out_dir"], "/", sample_name))
+              chr_dir <- paste0(config["out_dir"], "/", sample_name)
+              dir.create(path = chr_dir)
               chr_to_plot <- c(1:22, "X")
             } else {
               chr_to_plot <- prev_chr
@@ -218,7 +219,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           if (preview == FALSE) {
 
-            ggsave(plot = fig, filename = paste0(config["out_dir"], "/", sample_name, "_CNV_fig.png"), device = 'png', width = 16, height = 10)
+            ggsave(plot = fig, filename = paste0(chr_dir, "/", sample_name, "_CNV_main_fig.png"), device = 'png', width = 16, height = 10)
 
             writeLines(c(readLines(log), paste("Sample", sample_name, "analyzed successfully")), con = log)
 

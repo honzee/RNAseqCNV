@@ -4,8 +4,28 @@
 #'
 #' @param config R script assigning variables needed for the analysis
 #' @param metadata path to a metadata table with three columns. First colum represents sample names, second file names of count files, third file names of snv files.
+#' @param adjust logical value, determines, whether the diploid boxplots should be centered around zero on y axis
+#' @param arm_lvl logical value, determines, wheter arm_lvl figures should be printed (slows the computation significantly)
+#' @param estimate logical value, determines, whether alteration will be estimated
+#' @param referData table, reference data for ensamble name annotation
+#' @param keptSNP vector of SNPs to keep for the analysis
+#' @param par_region table with pseudoautosomal regions, in order for these regions to be fitlered out
+#' @param centr_refer table with centromeric locations per chromosome
+#' @param weight_tab table with per-gene weight for adjusting the importance of each gene in calling CNA
+#' @param model_gend model for estimating gender based on expression of certain genes on chromosome Y
+#' @param model_dip model for estimating whether chromosome arm is diploid
+#' @param model_alter model for estimating the CNV on chromosome arm
+#' @param chroms vector of chromosomes to be analyzed
+#' @param base_matrix matrix with rows being gene expression and columns DIPLOID samples. This matrix is used as a diploid reference.
+#' @param base_column column names for base_matrix parameter
+#' @param scale_cols colour scaling for box plot
+#' @param dpRationChromEdge table with chromosome start and end base positions
+#' @param minDepth minimal depth of of SNV to be kept
+#' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: 0.9 quantile of read count per-gene in analyzed cohort > minReadCnt
+#' @param q numeric value, see minReadCnt
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt, chroms = chrs, base_matrix = base_matr, base_column = base_col, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
+RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+                              chroms = chrs, base_matrix = base_matr, base_column = base_col, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
 
   #Check the format
 
@@ -62,7 +82,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_region)
 
     #Calculate metrics for chromosome arms
-    feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
+    feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
     #estimate gender
     count_ns_gend <- count_ns %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
@@ -153,7 +173,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
       fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 
-      ggsave(plot = fig, filename = file.path(out_dir, paste0(sample_name, "_CNV_fig.png")), device = 'png', width = 16, height = 10)
+      ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10)
 
   }
 }
