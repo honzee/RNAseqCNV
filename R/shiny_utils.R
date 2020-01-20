@@ -219,15 +219,14 @@ plot_snv <- function(smpSNPdata, chrs, sample_name) {
     smpSNPdata = bind_rows(smpSNPdata, tmpSNPdata)
   }
   if(nrow(smpSNPdata)<500){
-    gp.maf=ggplot()+annotate("text", x = 1, y = 1, label = "No MAF plot. Less than 1k SNVs!")+theme_void()
+    gp.maf=ggplot()+annotate("text", x = 1, y = 1, label = "Low coverage")+theme_void()
   }else{
     snvNumDensityMaxY=smpSNPdata %>% select(chr, snvNum, peak_max, peakdist) %>% unique()
     yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$peak_max %>% max()
-    snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05, label=paste0("n=", snvNum))
+    snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05)
     peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
     gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") + ylim(0, yAxisMax*1.2) +
       geom_density(aes(maf, color=peakCol)) +
-      geom_text(data=snvNumDF, aes(x, y, label=label), vjust=0)+
       geom_text(data = peakdist_dat, aes(x, y, label = label), vjust=0)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       scale_color_identity()+
@@ -328,30 +327,30 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
 
   SNP_ann <- smpSNP_arm %>% select(chr, snvNum, peak_max, peakdist) %>% unique()
 
-  snvNumDF = SNP_ann %>% mutate(x=0.5, y=yAxisMax*1.05, label=paste0("n=", snvNum))
   peakdist_dat = SNP_ann %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
 
 
   if (nrow(smpSNP_arm) < 10) {
     gg_snv_arm = ggplot() + ylim(0, yAxisMax*1.2)+
       scale_x_continuous(limits = c(0,1)) +
-      annotate("text", x = 0.5, y = 0.8 * yAxisMax, label = "Low n. of SNVs")+
+      annotate("text", x = 0.5, y = 0.8 * yAxisMax, label = "Low coverage")+
       ggtitle(paste0(plot_arm, " arm")) +
       theme_void() +
       theme(plot.margin = unit(c(0,1,1,1), "lines"), plot.title = element_text(hjust = 0.5, size = 20))
   } else {
     gg_snv_arm <- ggplot(data=smpSNP_arm) + xlab("Mutant allele frequency") + ylab("Density") + ylim(0, yAxisMax*1.2) +
       geom_density(aes(maf, color=peakCol)) +
-      geom_text(data=snvNumDF, aes(x, y, label=label), vjust=0)+
-      geom_text(data = peakdist_dat, aes(x, y, label = paste0("peak_dist = ", label)), vjust=0)+
+      geom_text(data = peakdist_dat, aes(x, y, label = paste0("peak dist. = ", label)), vjust=0, size = 5)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       scale_color_identity()+
-      scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 3), minor_breaks = NULL, limits = c(0,1)) +
+      scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 2), minor_breaks = NULL, limits = c(0,1), labels = c("1/3", "1/2", "2/3")) +
       ggtitle(paste0(plot_arm, " arm")) +
       theme_bw() +
-      theme(axis.text.x = element_text(size = 0.8), axis.ticks = element_blank(),
+      theme(axis.text = element_text(size = 13), axis.ticks = element_blank(),
             strip.background = element_blank(), strip.text.x = element_blank(),
-            plot.margin = unit(c(0,1,1,1), "lines"), plot.title = element_text(hjust = 0.5, size = 20))
+            plot.margin = unit(c(0,1,1,1), "lines"), plot.title = element_text(hjust = 0.5, size = 20),
+            axis.title = element_text(size = 14)
+      )
   }
   return(gg_snv_arm)
 }

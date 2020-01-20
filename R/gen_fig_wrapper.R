@@ -1,22 +1,19 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev_chr, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
 
     #Is any neccessary input missing?
-    if (all(metadata == "no_input")) {showNotification("A metadata file is needed to generate a preview", duration = 5, id = "not_conf", type = "message"); return(NULL) }
-    if (all(config == "no_input")) {showNotification("A config file is needed to generate a preview", duration = 5, id = "not_count", type = "message"); return(NULL)}
+    if (all(metadata == "no_input")) {showNotification("A metadata file is needed to generate figures", duration = 5, id = "not_conf", type = "message"); return(NULL) }
+    if (all(config == "no_input")) {showNotification("A config file is needed to generate figures", duration = 5, id = "not_count", type = "message"); return(NULL)}
 
     #Is the directory relevant?
     if (config["count_dir"] == FALSE) {showNotification("Could not find directory with count files", duration = 5, id = "not_valid_count", type = "message"); return(NULL)}
     if (config["snv_dir"] == FALSE) {showNotification("Could not find directory with snv files", duration = 5, id = "not_valid_snv", type = "message"); return(NULL)}
-    if (preview == FALSE) {
-      if (config["out_dir"] == FALSE) {showNotification("Could not find the output directory", duration = 5, id = "not_out", type = "message"); return(NULL)}
-    }
+    if (config["out_dir"] == FALSE) {showNotification("Could not find the output directory", duration = 5, id = "not_out", type = "message"); return(NULL)}
     if (all(metadata == "incorrect_format")) {showNotification("Config file does not have the neccessary three columns", duration = 5, id = "not_valid_config", type = "message"); return(NULL)}
 
     if (avail != "all_present") {showNotification(avail , duration = NULL, id = "avail", type = "warning"); return(NULL)}
 
 
-    if (preview == FALSE) {
       #Create a table to write the estimation into
       est_table <- data.frame(sample = character(),
                               gender = factor(levels = c("female", "male")),
@@ -27,18 +24,13 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
       #Create a log file to keep track of the analysis
       log <-  paste0(config["out_dir"], "/", "log.txt")
       cat("", file = log)
-    } else {
-      output <- list()
-    }
+
 
     #Run the code with progress bar
     withProgress(message = "Analyzing..", value = 0, {
 
-      if (preview == TRUE) {
-        samples <- 1
-      } else {
-        samples <- c(1:nrow(sample_table))
-      }
+      # set the number of samples to be analysed
+      samples <- 1:to_analyse
 
       for(i in samples) {
 
@@ -56,12 +48,11 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           #check whether the snv file is in correct format
           if(is.null(smpSNP)) {
-            if (preview == "FALSE") {
-              writeLines(c(readLines(log), paste("File", sample_table$snv_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
-              incProgress(amount = 1/nrow(sample_table), message = "File skipped")
-              next() } else {
-                return(showNotification("Incorrect format of snv file", duration = 5, id = "incorrect_snv_format", type = "message"))
-              }
+
+            writeLines(c(readLines(log), paste("File", sample_table$snv_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
+            incProgress(amount = 1/nrow(sample_table), message = "File skipped")
+            next()
+
           }
 
           #calculate noemalized count values with DESeq2
@@ -69,13 +60,9 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           #check whether the count file is in correct format
           if (is.null(count_norm)) {
-            if (preview == FALSE) {
               writeLines(c(readLines(log), paste("File", sample_table$count_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
               incProgress(amount = 1/nrow(sample_table), message = "File skipped")
               next()
-              } else {
-                return(showNotification("Incorrect format of count file", duration = 5, id = "incorrect_count_format", type = "message"))
-              }
           }
 
 
@@ -140,11 +127,9 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
             kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
-            if (preview == FALSE) {
-              est_table <- rbind(est_table, kar_list)
-              write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t")
-              write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t")
-            }
+            est_table <- rbind(est_table, kar_list)
+            write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t")
+            write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t")
 
           }
 
@@ -177,13 +162,10 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
             incProgress(amount = 0.08, detail = "Plotting chromosomes in detail")
 
-            if (preview == FALSE) {
-              chr_dir <- paste0(config["out_dir"], "/", sample_name)
-              dir.create(path = chr_dir)
-              chr_to_plot <- c(1:22, "X")
-            } else {
-              chr_to_plot <- prev_chr
-            }
+            chr_dir <- paste0(config["out_dir"], "/", sample_name)
+            dir.create(path = chr_dir)
+            chr_to_plot <- c(1:22, "X")
+
 
             for (i in chr_to_plot) {
 
@@ -197,13 +179,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
               gg_arm <- chr_plot(p_snv = gg_snv_arm_p, q_snv = gg_snv_arm_q, arm_expr = gg_exp_zoom)
 
-              if (preview == FALSE) {
-                ggsave(filename = paste0(config["out_dir"], "/", sample_name, "/", "chromosome_", i, ".png"), plot = gg_arm, device = "png", width = 20, height = 10)
-              } else {
+              ggsave(filename = paste0(config["out_dir"], "/", sample_name, "/", "chromosome_", i, ".png"), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
 
-                output$gg_arm <- gg_arm
-
-              }
             }
 
           }
@@ -217,25 +194,31 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, preview, prev
 
           fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 
-          if (preview == FALSE) {
+          ggsave(plot = fig, filename = paste0(chr_dir, "/", sample_name, "_CNV_main_fig.png"), device = 'png', width = 16, height = 10, dpi = 200)
 
-            ggsave(plot = fig, filename = paste0(chr_dir, "/", sample_name, "_CNV_main_fig.png"), device = 'png', width = 16, height = 10)
+          writeLines(c(readLines(log), paste("Sample", sample_name, "analyzed successfully")), con = log)
 
-            writeLines(c(readLines(log), paste("Sample", sample_name, "analyzed successfully")), con = log)
-
-          } else {
-
-            output$fig <- fig
-          }
         })
       }
     })
 
       showNotification("Analysis complete", id = "an_compl", type = "message", closeButton = TRUE)
 
-      if (preview == TRUE) {
+      if (to_analyse == 1) {
 
-        return(output)
+        chr_choices_prev <- reactive({
+
+          chromosomes <- list.files(path = paste0(config["out_dir"], "/", sample_name, "/"), pattern = "^chromosome_.*.png$")
+
+          if (length(chromosomes) == 0) {
+              return(NULL)
+            } else if (length(chromosomes) > 0) {
+              choices <-  factor(gsub("_|.png", " ", chromosomes), levels = paste0("chromosome ", c(1:22, "X"), " "))
+              choices <- choices[order(choices)]
+              return(choices)
+          }
+
+        })
 
       }
 }

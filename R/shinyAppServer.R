@@ -121,32 +121,67 @@ shinyAppServer <- function(input, output, session) {
                            })
 
   # ####Generate a figure from the first file in sample table######
-  observeEvent(input$preview, {
+  figures <- eventReactive(input$preview, {
 
-    prev_fig <- gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = TRUE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
-                                refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                                base_matr, base_col, scaleCols, dpRatioChrEdge)
+    gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
+                    base_matr, base_col, scaleCols, dpRatioChrEdge)
 
-    if (!is.null(prev_fig)) {
-      output$plot_arm <- renderPlot({
-        prev_fig$gg_arm
-      })
+    chr_figs <- file.path(config()["out_dir"], sample_table()[1, 1], paste0("chromosome_", c(1:22, "X"), ".png"))
+    main_fig <- file.path(config()["out_dir"], sample_table()[1, 1], paste0(sample_table()[1, 1], "_CNV_main_fig.png"))
 
-      output$arr <- renderPlot({
-        prev_fig$fig
-      }, height = (function() {
-        session$clientData$output_arr_width/2
-      }) )
+    figures <- list(chr_figs = chr_figs, main_fig = main_fig)
+
+    return(figures)
+  })
+
+  # Render main fig image for the first sample analysis
+  output$main_fig_prev <- renderImage({
+    list(src = figures()$main_fig,
+         contentType = "image/png",
+         width = "100%",
+         height = "auto"
+    )
+  }, deleteFile = FALSE)
+
+  # Render chromosome figure based on the selected chromosome
+  output$chr_fig_prev <- renderImage({
+    list(src = figures()$chr_fig[chromosome()],
+         contentType = "image/png",
+         width = "100%",
+         height = "auto"
+    )
+  }, deleteFile = FALSE)
+
+  # Reactive value for keeping track of selected chromosome
+  chromosome <- eventReactive(c(input$next_butt_chr_prev, input$prev_butt_chr_prev), {
+
+    sel_chrom = input$next_butt_chr_prev - input$prev_butt_chr_prev
+
+    if (sel_chrom >= 0) {
+      return(sel_chrom %% 23 + 1)
+    } else {
+      return(23 - (abs(sel_chrom) %% 23) +1)
     }
 
   })
 
+
+  # reset selected chromosome after running the first sample
+  chr_sel_prev <- eventReactive(figures(), {
+    return(1)
+  })
+
+  # react with selected chromosome to next/previous buttons
+  chr_sel_prev <-
+
+
   ####Analyze all samples and save figures####
   observeEvent(input$analyze, {
 
-    gen_fig_wrapper(config(), metadata(), avail(), sample_table(), preview = FALSE, prev_chr = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+    gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = nrow(metadata()), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
                     refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                    base_matr, base_col, scaleCols = scaleCols_DES_norm, dpRatioChrEdge)
+                    base_matr, base_col, scaleCols, dpRatioChrEdge)
 
 
     #Reload the directory for the the analysis tab to refresh
@@ -241,10 +276,10 @@ shinyAppServer <- function(input, output, session) {
   observe({
 
     if(is.null(est_table_man()) | check() == FALSE) {
-      hideTab(inputId = "tabs", target = "Analysis")
+      hideTab(inputId = "tabs", target = "Manual CNV analysis")
       hideTab(inputId = "tabs", target = "Export")
     } else {
-      showTab(inputId = "tabs", target = "Analysis")
+      showTab(inputId = "tabs", target = "Manual CNV analysis")
       showTab(inputId = "tabs", target = "Export")
 
     }

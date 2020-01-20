@@ -163,7 +163,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
         gg_arm <- chr_plot(p_snv = gg_snv_arm_p, q_snv = gg_snv_arm_q, arm_expr = gg_exp_zoom)
 
-        ggsave(filename = file.path(chr_dir, paste0("chromosome_", i, ".png")), plot = gg_arm, device = "png", width = 20, height = 10)
+        ggsave(filename = file.path(chr_dir, paste0("chromosome_", i, ".png")), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
 
       }
 
@@ -173,7 +173,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
       fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 
-      ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10)
+      ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10, dpi = 200)
 
   }
 }
