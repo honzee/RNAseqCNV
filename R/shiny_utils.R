@@ -184,19 +184,21 @@ filter_expr <- function(count_ns_final, cutoff = 0.6) {
 }
 
 ####plot expression boxplot and point plot####
-plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt) {
-  gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized vst") + ggtitle(paste0(sample_name)) +
+plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
+  gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized expression") +
     scale_fill_identity()+
     geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32)+
     scale_size(range = c(2, 6)) +
     #scale_alpha(range = c(0.22, 0.4)) +
     geom_boxplot(data = box_wdt, aes(ymin = min, lower = low, middle = med_weig, upper = high, ymax = max, fill=medianCol, x = pos), alpha=0.75, outlier.colour = NA, stat = "identity")+
-    geom_hline(yintercept = 0, colour = "red")
+    geom_hline(yintercept = 0, colour = "red")+
+    labs(title = paste0(sample_name),
+    subtitle = paste0("estimated gender: ", gender))
 
   if (estimate == TRUE) {
     gp_expr <- gp_expr +
-    geom_label(data = distinct(feat_tab_alt, chr, colour_chr, chr_alt), aes(x = 0.5, y = ylim[2], color = colour_chr, label = chr_alt)) +
-    scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "blueviolet", "blue"))
+    geom_label(data = distinct(feat_tab_alt, chr, colour_chr, chr_alt), aes(x = 0.5, y = ylim[2], color = colour_chr, label = chr_alt), label.size = 2) +
+    scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "darkmagenta", "blue"))
   }
 
   gp_expr <- gp_expr +
@@ -204,6 +206,7 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
     theme_bw() +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5),
+          plot.subtitle = element_text(hjust = 0.5),
           axis.title.x=element_blank(),
           axis.text.x = element_blank(),
           axis.ticks = element_blank())
@@ -225,18 +228,19 @@ plot_snv <- function(smpSNPdata, chrs, sample_name) {
     yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$peak_max %>% max()
     snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05)
     peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
-    gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") + ylim(0, yAxisMax*1.2) +
+    gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") +
       geom_density(aes(maf, color=peakCol)) +
       geom_text(data = peakdist_dat, aes(x, y, label = label), vjust=0)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       scale_color_identity()+
       scale_x_continuous(breaks = round(c(1/3, 2/3), 3), labels = c("1/3", "2/3"), minor_breaks = NULL, limits = c(0,1)) +
+      scale_y_continuous(breaks = c(seq(from = 1, to = floor(yAxisMax)), yAxisMax*1.15), labels = c(seq(from = 1, to = floor(yAxisMax)), "peak dist."), limits = c(0, yAxisMax*1.2)) +
       facet_grid(.~chr, scales="free_y") +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 40, vjust = 0.5), axis.ticks = element_blank(),
             strip.background = element_blank(), strip.text.x = element_blank(),
-            plot.margin = unit(c(0,1,1,1), "lines"))
-
+            plot.margin = unit(c(0,1,1,1), "lines")
+            )
   }
 }
 
@@ -275,7 +279,7 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
 
   count_ns_chr <- filter(count_ns_final, chr == plot_chr, count_nor_med < 2.1 & count_nor_med > -2.1)
 
-  gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized vst") +
+  gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized expression") +
     geom_point(aes(x = normPos, y = count_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
     geom_smooth(aes(x = normPos, y = count_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
@@ -288,6 +292,8 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
     theme_bw() +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5, size = 20),
+          axis.text = element_text(size = 13),
+          axis.title = element_text(size = 14),
           axis.title.x = element_blank(),
           axis.text.x = element_blank(),
           axis.ticks = element_blank())
@@ -298,10 +304,10 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
     p_alt <- feat_tab_alt %>% filter(arm == "p", chr == plot_chr)
 
     gg_expr_zoom <- gg_expr_zoom +
-      geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm)) +
-      scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "blueviolet", "blue")) +
+      geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1) +
+      scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "darkmagenta", "blue")) +
       if(nrow(p_alt) > 0) {
-        geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm))
+        geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1)
       }
   }
 
@@ -329,7 +335,6 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
 
   peakdist_dat = SNP_ann %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
 
-
   if (nrow(smpSNP_arm) < 10) {
     gg_snv_arm = ggplot() + ylim(0, yAxisMax*1.2)+
       scale_x_continuous(limits = c(0,1)) +
@@ -352,6 +357,17 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
             axis.title = element_text(size = 14)
       )
   }
+
+  # switcht axis side and remove q arm y axis title
+  if (plot_arm == "q") {
+    suppressMessages(gg_snv_arm <- gg_snv_arm +
+                       theme(axis.title.y.left = element_blank(),
+                             axis.text.y.left = element_blank(),
+                             axis.ticks.y.left = element_blank()) +
+                       scale_y_continuous(position = "right") +
+                       ylab(""))
+  }
+
   return(gg_snv_arm)
 }
 
