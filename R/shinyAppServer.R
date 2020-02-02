@@ -6,6 +6,7 @@ shinyAppServer <- function(input, output, session) {
 
   #do the directories from the input exist?
   config <- reactive({
+
     if (!is.null(input$config)) {
       source(input$config$datapath)
 
@@ -100,6 +101,7 @@ shinyAppServer <- function(input, output, session) {
 
     HTSeq_f = pull(sample_table, 2)
     snv_f = pull(sample_table, 3)
+
     #create paths to the files
     sample_table$count_path <- file.path(config()["count_dir"], HTSeq_f)
     sample_table$snv_path <-  file.path(config()["snv_dir"], snv_f)
@@ -131,6 +133,11 @@ shinyAppServer <- function(input, output, session) {
     main_fig <- file.path(config()["out_dir"], sample_table()[1, 1], paste0(sample_table()[1, 1], "_CNV_main_fig.png"))
 
     figures <- list(chr_figs = chr_figs, main_fig = main_fig)
+
+    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+    react_val$man_table <- def_table
+    react_val$def_table <- def_table
+    react_val$check <- TRUE
 
     return(figures)
   })
@@ -166,27 +173,22 @@ shinyAppServer <- function(input, output, session) {
 
   })
 
-
-  # reset selected chromosome after running the first sample
-  chr_sel_prev <- eventReactive(figures(), {
-    return(1)
-  })
-
-  # react with selected chromosome to next/previous buttons
-  chr_sel_prev <-
-
+  # Create reactiveValues variable in order to load a estimation table
+  react_val <- reactiveValues()
+  # Default check reactive value as FALSE
+  react_val$check <- FALSE
 
   ####Analyze all samples and save figures####
   observeEvent(input$analyze, {
 
-    gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = nrow(metadata()), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
-                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                    base_matr, base_col, scaleCols, dpRatioChrEdge)
+      gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = nrow(metadata()), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+                      refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
+                      base_matr, base_col, scaleCols, dpRatioChrEdge)
 
-
-    #Reload the directory for the the analysis tab to refresh
-    updateTextInput(session, inputId = "out_dir", value = "")
-    updateTextInput(session, inputId = "out_dir", value = config()["out_dir"])
+    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+    react_val$man_table <- def_table
+    react_val$def_table <- def_table
+    react_val$check <- TRUE
 
   })
 
@@ -196,38 +198,39 @@ shinyAppServer <- function(input, output, session) {
 
     config()["out_dir"]
 
-    if (check() == FALSE) return(NULL)
+    if (react_val$check == FALSE) return(NULL)
 
 
     selectInput("sel_sample", "Select sample to visualize",
-                choices = est_table_man()$sample, selected = est_table_man()$sample[1])
+                choices = react_val$man_table$sample, selected = react_val$man_table$sample[1])
   })
 
-  #read default estimation table if possible
-  est_table_def <- reactive({
+  #read default estimation table in case config file is changed
+  observeEvent(config(), {
 
     table_exists <- file.exists(paste0(config()["out_dir"], "/", "estimation_table.tsv"))
 
     if (table_exists == TRUE) {
       est_def <- read.table(file = paste0(config()["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE)
       est_def <- cbind(est_def, status = "not checked", comments = "none")
-      return(est_def)
+
+      react_val$def_table <- est_def
     } else {
       NULL
     }
 
   })
 
-  #read estimation table for manual corrections
-  est_table_man <- reactive({
-
-    input$save_changes
+  #read estimation table for manual curration in case config file is changed
+  observeEvent(config(), {
 
     table_exists <- file.exists(paste0(config()["out_dir"], "/", "manual_an_table.tsv"))
 
     if (table_exists == TRUE) {
       est_man <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
-      return(est_man)
+
+      react_val$man_table <- est_man
+
     } else {
       NULL
     }
@@ -235,8 +238,10 @@ shinyAppServer <- function(input, output, session) {
   })
 
 
-  #list all figures in output directory
+  # list all figures in output directory
   fig_sam <- reactive({
+
+    input$config
 
     figs = sub(".*/", "", list.files(path = config()["out_dir"], pattern = "_CNV_main_fig.png", recursive = TRUE, full.names = FALSE))
 
@@ -248,43 +253,42 @@ shinyAppServer <- function(input, output, session) {
   })
 
 
-  #check if the figures and estimation table match
-  check <- reactive({
+
+
+  # check if the figures and estimation table match
+  observe({
 
     #check whether files are present
-    if (is.null(fig_sam()) | is.null(est_table_def()) | is.null(est_table_man())) return(FALSE)
+    if (is.null(fig_sam()) | is.null(react_val$def_table) | is.null(react_val$man_table) | is.null(sample_table())) return(FALSE)
 
     figures <- fig_sam()
 
-    #the check is completed only if the samples in the table and figure samples are identical
+    #the check is completed only if the samples in the given directory match with samples in estimation tables and and samples from the input
 
-    if (length(figures) == nrow(est_table_def()) & length(figures) == nrow(est_table_man())) {
-
-      if (all(figures %in% est_table_def()$sample) & all(figures %in% est_table_man()$sample)) {
-        return(TRUE)
+      if (all(figures %in% react_val$def_table$sample) & all(figures %in% react_val$man_table$sample) & all(figures %in% pull(sample_table(), 1))) {
+        react_val$check <- TRUE
       } else {
-        return(FALSE)
+        react_val$check <- FALSE
       }
-    } else {
-      return(FALSE)
-    }
 
   })
 
+  #Hide tabs in default
+  hideTab(inputId = "tabs", target = "Manual CNV analysis")
+  hideTab(inputId = "tabs", target = "Export")
 
-  #show/hide analysis and export tab based upon the table for manual curration and check value
   observe({
 
-    if(is.null(est_table_man()) | check() == FALSE) {
-      hideTab(inputId = "tabs", target = "Manual CNV analysis")
-      hideTab(inputId = "tabs", target = "Export")
-    } else {
+    if (react_val$check == TRUE) {
       showTab(inputId = "tabs", target = "Manual CNV analysis")
       showTab(inputId = "tabs", target = "Export")
+    } else {
+      hideTab(inputId = "tabs", target = "Manual CNV analysis")
+      hideTab(inputId = "tabs", target = "Export")
 
     }
-
   })
+
 
   #render image based on the select button####
   output$main_fig <- renderImage({
@@ -357,8 +361,8 @@ shinyAppServer <- function(input, output, session) {
     #prevent crashing when changing output directories and updating selectInput and other inputs
     cur_sel <- input$sel_sample
 
-    if (!cur_sel %in% est_table_man()$sample) {
-      sel <- est_table_man()$sample[1]
+    if (!cur_sel %in% react_val$man_table$sample) {
+      sel <- react_val$man_table$sample[1]
     } else {
       sel <- cur_sel
     }
@@ -367,31 +371,31 @@ shinyAppServer <- function(input, output, session) {
     updateSelectInput(session, "sel_sample", choices = fig_sam(), selected = sel)
 
     #update type
-    type <- est_table_man()$type[est_table_man()$sample == sel]
+    type <- react_val$man_table$type[react_val$man_table$sample == sel]
     output$type_text <- renderUI({
       textInput(inputId = "type_text", value = type, label = "Type in karyotypic subtype")
     })
 
     #update gender
-    gender <- est_table_man()$gender[est_table_man()$sample == sel]
+    gender <- react_val$man_table$gender[react_val$man_table$sample == sel]
     output$gender_text <- renderUI({
       textInput(inputId = "gender_text", value = gender, label = "Type in the gender of the sample")
     })
 
     #update chromosome number
-    chromn <- est_table_man()$chrom_n[est_table_man()$sample == sel]
+    chromn <- react_val$man_table$chrom_n[react_val$man_table$sample == sel]
     output$chromn_text <- renderUI({
       textInput(inputId = "chromn_text", value = chromn, label = "Type in the number of chromosomes")
     })
 
     #update alterations
-    alt <- est_table_man()$alterations[est_table_man()$sample == sel]
+    alt <- react_val$man_table$alterations[react_val$man_table$sample == sel]
     output$alt_text <- renderUI({
       textInput(inputId = "alt_text", value = alt, label = "Type in the chromosomal alterations")
     })
 
     #update comments
-    comments <- est_table_man()$comments[est_table_man()$sample == sel]
+    comments <- react_val$man_table$comments[react_val$man_table$sample == sel]
     output$comments_text <- renderUI({
       textInput(inputId = "comments_text", value = comments, label = "Comments")
     })
@@ -402,6 +406,7 @@ shinyAppServer <- function(input, output, session) {
   output$next_butt <- renderUI({
 
     actionButton("next_butt", "Next", width = "100%")
+
   })
 
   observeEvent(input$next_butt, {
@@ -429,7 +434,7 @@ shinyAppServer <- function(input, output, session) {
 
   observeEvent(input$prev_butt, {
 
-    samples <- unlist(est_table_man()$sample)
+    samples <- unlist(react_val$man_table$sample)
 
     selected <- which(input$sel_sample == samples)
 
@@ -446,7 +451,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render save button
   output$save_butt <- renderUI({
-    if(is.null(est_table_man())) return(NULL)
+    if(is.null(react_val$man_table)) return(NULL)
 
     actionButton("save_changes", "Save", width = "100%")
   })
@@ -468,6 +473,7 @@ shinyAppServer <- function(input, output, session) {
     man_an[sam_ind, "status"] <- "checked"
 
     write.table(man_an, file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), sep = "\t")
+    react_val$man_table <- man_an
 
   })
 
@@ -489,17 +495,17 @@ shinyAppServer <- function(input, output, session) {
       return(NULL)
     } else {
       #check whether any text input changed
-      if(input$type_text != as.character(est_table_man()$type[est_table_man()$sample == input$sel_sample]) |
-         input$gender_text != as.character(est_table_man()$gender[est_table_man()$sample == input$sel_sample]) |
-         input$chromn_text != as.character(est_table_man()$chrom_n[est_table_man()$sample == input$sel_sample]) |
-         input$alt_text != as.character(est_table_man()$alterations[est_table_man()$sample == input$sel_sample]) |
-         input$comments_text != as.character(est_table_man()$comments[est_table_man()$sample == input$sel_sample])
+      if(input$type_text != as.character(react_val$man_table$type[react_val$man_table$sample == input$sel_sample]) |
+         input$gender_text != as.character(react_val$man_table$gender[react_val$man_table$sample == input$sel_sample]) |
+         input$chromn_text != as.character(react_val$man_table$chrom_n[react_val$man_table$sample == input$sel_sample]) |
+         input$alt_text != as.character(react_val$man_table$alterations[react_val$man_table$sample == input$sel_sample]) |
+         input$comments_text != as.character(react_val$man_table$comments[react_val$man_table$sample == input$sel_sample])
       ) {
 
         status <- "unsaved changes"
 
       } else {
-        status <- as.character(est_table_man()$status[est_table_man()$sample == input$sel_sample])
+        status <- as.character(react_val$man_table$status[react_val$man_table$sample == input$sel_sample])
       }
 
 
@@ -564,7 +570,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render default ui button and allow to get back to default estimation
   output$default <- renderUI({
-    if (is.null(est_table_def())) return(NULL)
+    if (is.null(react_val$def_table)) return(NULL)
 
     actionButton("default", "Default estimate")
   })
@@ -572,19 +578,19 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$default,{
 
     #update type
-    def_type <- est_table_def()$type[est_table_def()$sample == input$sel_sample]
+    def_type <- react_val$def_table$type[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "type_text", value = def_type)
     #update gender
-    def_gender <- est_table_def()$gender[est_table_def()$sample == input$sel_sample]
+    def_gender <- react_val$def_table$gender[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "gender_text", value = def_gender)
     #update chromosome number
-    def_chromn <- est_table_def()$chrom_n[est_table_def()$sample == input$sel_sample]
+    def_chromn <- react_val$def_table$chrom_n[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "chromn_text", value = def_chromn)
     #update alterations
-    def_alt <- est_table_def()$alterations[est_table_def()$sample == input$sel_sample]
+    def_alt <- react_val$def_table$alterations[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "alt_text", value = def_alt)
     #update comments
-    def_comments <- est_table_def()$comments[est_table_def()$sample == input$sel_sample]
+    def_comments <- react_val$def_table$comments[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "comments_text", value = def_comments)
   })
 
@@ -592,7 +598,7 @@ shinyAppServer <- function(input, output, session) {
   #render Text to represent which sample in row is being analyzed
   output$sample_num <- renderText({
 
-    samples = unlist(est_table_man()$sample)
+    samples = unlist(react_val$man_table$sample)
     num = which(samples == input$sel_sample)
 
     paste0("<font size='5px'><p align='center'>Sample <b>", num, "</b> out of <b>", length(samples), "</b>")
@@ -601,20 +607,9 @@ shinyAppServer <- function(input, output, session) {
   #render checkbox user interface for export tab
   output$columns <- renderUI({
 
-    variables = colnames(est_table_man())[-1]
+    variables = colnames(react_val$man_table)[-1]
     checkboxGroupInput("columns", "Choose columns to export", choices = variables, selected = variables)
 
-  })
-
-  #render textInput for export directory
-  output$exp_out_dir <- renderUI({
-
-    textInput("exp_out_dir", "Directory to export the file to (defaults to the output directory from the input tab)")
-  })
-
-  #check export directory
-  check_exp_dir <- reactive({
-    dir.exists(input$exp_out_dir) | input$exp_out_dir == ""
   })
 
   #render warning message if export directory does not exist
@@ -640,7 +635,7 @@ shinyAppServer <- function(input, output, session) {
   #render preview for table to export
   output$prev_tab <- renderTable({
 
-    to_show <- est_table_man() %>% select("sample", input$columns) %>% head(20)
+    to_show <- react_val$man_table %>% select("sample", input$columns) %>% head(20)
     return(to_show)
 
   })
@@ -656,7 +651,7 @@ shinyAppServer <- function(input, output, session) {
       input$exp_out_dir
     }
 
-    table <- est_table_man() %>% select("sample", input$columns)
+    table <- react_val$man_table %>% select("sample", input$columns)
 
     #save a format based on the input from radio_buttons
 
