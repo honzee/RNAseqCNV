@@ -55,6 +55,52 @@ get_norm_exp <- function(sample_table, minReadCnt, q, sample_num, base_col, base
 }
 
 
+gm_mean = function(a){prod(a)^(1/length(a))}
+
+get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
+  #extract file names from sample table
+  count_file <- pull(sample_table, "count_path")[sample_num]
+  sample_n <- pull(sample_table, 1)[sample_num]
+
+  #read the count table
+  count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
+
+  #check the count file format
+  if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
+
+  colnames(count_table) <- sample_n
+
+  #create coldata
+  colData = data.frame(sampleName = sample_n, fileName = count_file)
+
+  #bind with baseline
+  final_mat <- cbind(count_table, base_matr)
+  final_col <- rbind(colData, base_col)
+  colnames(final_mat) <- as.character(final_col$sampleName)
+
+  #calculate per-gene standard geom_mean and remove zeros ind Inf
+  pseudo_ref_des <- apply(X = final_mat, MARGIN = 1, function(x) gm_mean(x))
+  low_exp <- which(pseudo_ref_des == 0)
+  size_fac <- apply(final_mat[-low_exp, ], MARGIN = 2, function(x) median(x/pseudo_ref_des[-low_exp]))
+
+  #Divide each column by size factor
+  count_norm <- final_mat
+  for (i in 1:ncol(final_mat)) {
+    count_norm[, i] <- final_mat[, i]/size_fac[i]
+  }
+
+  #filter genes based on reads count; top 1-q have read count > N and filter based on weight
+  keepIdx = as.data.frame(count_norm) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
+    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
+
+  count_fin <- count_norm[keepIdx, ]
+
+  print(paste0("Normalization for sample: ", sample_n, " completed"))
+  count_fin = round(data.frame(count_fin, digits = 2))
+
+  return(count_fin)
+}
+
 ####get median expression level####
 get_med <- function(count_norm, refDataExp) {
 
@@ -365,7 +411,7 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
                              axis.text.y.left = element_blank(),
                              axis.ticks.y.left = element_blank()) +
                        scale_y_continuous(position = "right") +
-                       ylab(""))
+                       ylab("Density"))
   }
 
   return(gg_snv_arm)

@@ -55,8 +55,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           }
 
-          #calculate noemalized count values with DESeq2
-          count_norm <- get_norm_exp(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
+          #calculate noemalized count values
+          count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
 
           #check whether the count file is in correct format
           if (is.null(count_norm)) {
@@ -128,8 +128,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
             kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
             est_table <- rbind(est_table, kar_list)
-            write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t")
-            write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t")
+            write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t", quote = FALSE)
+            write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
 
           }
 

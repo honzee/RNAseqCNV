@@ -134,7 +134,7 @@ shinyAppServer <- function(input, output, session) {
 
     figures <- list(chr_figs = chr_figs, main_fig = main_fig)
 
-    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
     react_val$man_table <- def_table
     react_val$def_table <- def_table
     react_val$check <- TRUE
@@ -185,7 +185,7 @@ shinyAppServer <- function(input, output, session) {
                       refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                       base_matr, base_col, scaleCols, dpRatioChrEdge)
 
-    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
     react_val$man_table <- def_table
     react_val$def_table <- def_table
     react_val$check <- TRUE
@@ -211,7 +211,7 @@ shinyAppServer <- function(input, output, session) {
     table_exists <- file.exists(paste0(config()["out_dir"], "/", "estimation_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_def <- read.table(file = paste0(config()["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE)
+      est_def <- read.table(file = paste0(config()["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
       est_def <- cbind(est_def, status = "not checked", comments = "none")
 
       react_val$def_table <- est_def
@@ -227,7 +227,7 @@ shinyAppServer <- function(input, output, session) {
     table_exists <- file.exists(paste0(config()["out_dir"], "/", "manual_an_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_man <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+      est_man <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
 
       react_val$man_table <- est_man
 
@@ -461,7 +461,7 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$save_changes, {
 
     #read in table for manual analysis
-    man_an <- read.table(paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE)
+    man_an <- read.table(paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
 
     #change values from text input
     sam_ind <- which(man_an$sample == input$sel_sample)
@@ -472,7 +472,7 @@ shinyAppServer <- function(input, output, session) {
     man_an[sam_ind, "comments"] <- input$comments_text
     man_an[sam_ind, "status"] <- "checked"
 
-    write.table(man_an, file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), sep = "\t")
+    write.table(man_an, file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
     react_val$man_table <- man_an
 
   })
@@ -614,7 +614,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render warning message if export directory does not exist
   output$mess_exp_out <- renderText({
-    if (check_exp_dir() == FALSE) {
+    if (dir.exists(input$exp_out_dir) == FALSE) {
       return('<font size="1px"><p style="text-align:left;"><font color="red">Could not find this directory')
     }
   })
@@ -643,12 +643,12 @@ shinyAppServer <- function(input, output, session) {
   #export table when actionButton is clicked
   observeEvent(input$export, {
 
-    if(check_exp_dir() == FALSE) return(showNotification("Could not find this directory", duration = 5, type = "message"))
-
-    out_dir <- if (input$exp_out_dir == "") {
-      config()["out_dir"]
+    if (input$exp_out_dir == "") {
+      out_dir <- config()["out_dir"]
+    } else if (dir.exists(input$exp_out_dir) == FALSE) {
+      return(showNotification("Could not find this directory", duration = 5, type = "message"))
     } else {
-      input$exp_out_dir
+      out_dir <- input$exp_out_dir
     }
 
     table <- react_val$man_table %>% select("sample", input$columns)
