@@ -614,7 +614,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render warning message if export directory does not exist
   output$mess_exp_out <- renderText({
-    if (dir.exists(input$exp_out_dir) == FALSE) {
+    if (dir.exists(input$exp_out_dir) == FALSE & !is.null(input$exp_out_dir)) {
       return('<font size="1px"><p style="text-align:left;"><font color="red">Could not find this directory')
     }
   })

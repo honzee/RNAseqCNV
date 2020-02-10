@@ -56,7 +56,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           }
 
           #calculate noemalized count values
-          count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8)
+          count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8, non_zero_samp = 0.8)
 
           #check whether the count file is in correct format
           if (is.null(count_norm)) {

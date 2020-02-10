@@ -59,7 +59,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chroms)
 
     #calculate normalized countd values with DESeq2
-    count_norm <- get_norm_exp(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_column, base_matr = base_matrix, weight_table = weight_tab, keep_perc = 0.8)
+    count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_column, base_matr = base_matrix, weight_table = weight_tab, keep_perc = 0.8, non_zero_samp = 0.8)
 
     #calculate medians for analyzed genes
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
@@ -167,7 +167,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
       }
 
-      gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate, feat_tab_alt = feat_tab_alt)
+      gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate, feat_tab_alt = feat_tab_alt, gender = gender)
 
       gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name)
 

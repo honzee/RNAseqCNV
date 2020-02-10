@@ -7,57 +7,11 @@
 #' @import stringr
 #' @importFrom data.table fread
 #' @import ggpubr
-#' @import DESeq2
 
 #### functions for deseq norm testing ####
 
-# get deseq_normalized counts
-get_norm_exp <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
-
-  #extract file names from sample table
-   count_file <- pull(sample_table, "count_path")[sample_num]
-   sample_n <- pull(sample_table, 1)[sample_num]
-
-  #read the count table
-  count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
-
-  #check the count file format
-  if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
-
-  colnames(count_table) <- sample_n
-
-  #create coldata
-  colData = data.frame(sampleName = sample_n, fileName = count_file)
-
-  #bind with baseline
-  final_mat <- cbind(count_table, base_matr)
-  final_col <- rbind(colData, base_col)
-  colnames(final_mat) <- as.character(final_col$sampleName)
-
-  #calculate vst
-  ddsCount=DESeqDataSetFromMatrix(countData = final_mat, colData = final_col, design= ~ 1)
-  print("Loading count files is done!")
-
-  ddsCount <- estimateSizeFactors(ddsCount)
-  count_mat <- counts(ddsCount)
-
-  #filter genes based on reads count; top 1-q have read count > N and filter based on weight
-  keepIdx = as.data.frame(count_mat) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
-    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
-
-  ddsCount <- ddsCount[keepIdx, ]
-  count_norm <- counts(ddsCount, normalized = TRUE)
-
-  print(paste0("Normalization for sample: ", sample_n, " completed"))
-  count_norm = round(data.frame(count_norm, digits = 2))
-
-  return(count_norm)
-}
-
-
-gm_mean = function(a){prod(a)^(1/length(a))}
-
-get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc) {
+# get normalized counts
+get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc, non_zero_samp) {
   #extract file names from sample table
   count_file <- pull(sample_table, "count_path")[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
@@ -90,7 +44,7 @@ get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_c
   }
 
   #filter genes based on reads count; top 1-q have read count > N and filter based on weight
-  keepIdx = as.data.frame(count_norm) %>% mutate(id = row_number(), keep_count = apply(., MARGIN = 1, FUN = function(x) quantile(x, q)), ENSG = rownames(.)) %>% filter(keep_count >= minReadCnt) %>%
+  keepIdx = as.data.frame(count_norm) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > 0) > (length(x) * non_zero_samp)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE | ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%
     left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
 
   count_fin <- count_norm[keepIdx, ]
@@ -100,6 +54,9 @@ get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_c
 
   return(count_fin)
 }
+
+#calculate geometric mean
+gm_mean = function(a){prod(a)^(1/length(a))}
 
 ####get median expression level####
 get_med <- function(count_norm, refDataExp) {
@@ -165,7 +122,7 @@ calc_arm_lvl <- function(smpSNPdata.tmp) {
 #beta-needs cleaning
 count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_tab_q) {
   count_ns_tmp = count_ns %>% left_join(pickGeneDFall, by = "ENSG") %>%
-    mutate(count_nor_med=log2(.[, 1] / med) )
+    mutate(count_nor_med=log2(.[, 1] / med) ) %>% filter(med != 0)
   sENSGinfor=refDataExp[match(count_ns_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
 
   #keeping only the genes which have weights calculated for geom_poit and boxplot
