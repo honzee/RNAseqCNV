@@ -7,6 +7,7 @@ install_github(repo = "honzee/RNAseqCNVapp")
 ```
 
 ## Input
+The package uses expression info
 To run the shiny application or the wrapper for generating figures, **config file** and **metadata file** is needed.
 
 ### Metadata

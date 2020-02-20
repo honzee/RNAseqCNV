@@ -1,0 +1,3 @@
+out_dir = "./"
+count_dir = system.file("extdata", package = "RNAseqCNVapp")
+snv_dir = system.file("extdata", package = "RNAseqCNVapp")

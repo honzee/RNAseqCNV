@@ -11,7 +11,8 @@
 #### functions for deseq norm testing ####
 
 # get normalized counts
-get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_col, base_matr, weight_table, keep_perc, non_zero_samp) {
+get_norm_exp_noDESeq <- function(sample_table, sample_num, diploid_standard, weight_table, minReadCnt, samp_prop, keep_weight_prop) {
+
   #extract file names from sample table
   count_file <- pull(sample_table, "count_path")[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
@@ -24,35 +25,38 @@ get_norm_exp_noDESeq <- function(sample_table, minReadCnt, q, sample_num, base_c
 
   colnames(count_table) <- sample_n
 
-  #create coldata
-  colData = data.frame(sampleName = sample_n, fileName = count_file)
-
   #bind with baseline
-  final_mat <- cbind(count_table, base_matr)
-  final_col <- rbind(colData, base_col)
-  colnames(final_mat) <- as.character(final_col$sampleName)
-
-  #calculate per-gene standard geom_mean and remove zeros ind Inf
-  pseudo_ref_des <- apply(X = final_mat, MARGIN = 1, function(x) gm_mean(x))
-  low_exp <- which(pseudo_ref_des == 0)
-  size_fac <- apply(final_mat[-low_exp, ], MARGIN = 2, function(x) median(x/pseudo_ref_des[-low_exp]))
-
-  #Divide each column by size factor
-  count_norm <- final_mat
-  for (i in 1:ncol(final_mat)) {
-    count_norm[, i] <- final_mat[, i]/size_fac[i]
-  }
+  final_mat <- cbind(count_table, diploid_standard)
 
   #filter genes based on reads count; top 1-q have read count > N and filter based on weight
-  keepIdx = as.data.frame(count_norm) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > 0) > (length(x) * non_zero_samp)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE | ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%
-    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_perc, na.rm = TRUE)) %>% pull(id)
+  keepIdx = as.data.frame(final_mat) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE) %>%
+    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_weight_prop, na.rm = TRUE)) %>% pull(id)
 
-  count_fin <- count_norm[keepIdx, ]
+  count_filt <- final_mat[c(keepIdx, which(rownames(final_mat) %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))), ]
+
+  #calculate per-gene standard geom_mean and remove zeros for size factor calculation
+  pseudo_ref_des <- apply(X = count_filt, MARGIN = 1, function(x) gm_mean(x))
+  low_exp <- which(pseudo_ref_des == 0)
+  size_fac <- apply(count_filt[-low_exp, ], MARGIN = 2, function(x) median(x/pseudo_ref_des[-low_exp]))
+
+  #Divide each column by size factor
+  count_norm <- count_filt
+  for (i in 1:ncol(count_filt)) {
+    count_norm[, i] <- count_filt[, i]/size_fac[i]
+  }
+
+  # #calculate per-gene standard geom_mean and remove zeros for size factor calculation
+  # pseudo_ref_des <- apply(X = count_filt, MARGIN = 1, function(x) gm_mean(x))
+  # low_exp <- which(pseudo_ref_des == 0)
+  # size_fac <- median(final_mat[-low_exp, 1]/pseudo_ref_des[-low_exp])
+  #
+  # #Divide each column by size factor
+  # count_norm <- count_filt[, 1]/size_fac
 
   print(paste0("Normalization for sample: ", sample_n, " completed"))
-  count_fin = round(data.frame(count_fin, digits = 2))
+  count_final = round(data.frame(count_norm, digits = 2))
 
-  return(count_fin)
+  return(count_final)
 }
 
 #calculate geometric mean
