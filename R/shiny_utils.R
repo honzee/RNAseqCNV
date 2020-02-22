@@ -11,7 +11,7 @@
 #### functions for deseq norm testing ####
 
 # get normalized counts
-get_norm_exp_noDESeq <- function(sample_table, sample_num, diploid_standard, weight_table, minReadCnt, samp_prop, keep_weight_prop) {
+get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt, samp_prop, weight_table, weight_samp_prop) {
 
   #extract file names from sample table
   count_file <- pull(sample_table, "count_path")[sample_num]
@@ -28,9 +28,9 @@ get_norm_exp_noDESeq <- function(sample_table, sample_num, diploid_standard, wei
   #bind with baseline
   final_mat <- cbind(count_table, diploid_standard)
 
-  #filter genes based on reads count; top 1-q have read count > N and filter based on weight
+  #filter genes based on reads count; top 1-q have read count > N and filter based]
   keepIdx = as.data.frame(final_mat) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE) %>%
-    left_join(weight_table) %>% filter(weight > quantile(.$weight, 1-keep_weight_prop, na.rm = TRUE)) %>% pull(id)
+    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>%  pull(id)
 
   count_filt <- final_mat[c(keepIdx, which(rownames(final_mat) %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))), ]
 
@@ -130,7 +130,7 @@ count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_tab_q) {
   sENSGinfor=refDataExp[match(count_ns_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
 
   #keeping only the genes which have weights calculated for geom_poit and boxplot
-  count_ns = cbind(sENSGinfor, count_ns_tmp) %>% left_join(weight_tab_q, by = "ENSG")
+  count_ns = cbind(sENSGinfor, count_ns_tmp) %>% inner_join(weight_tab_q, by = "ENSG")
   return(count_ns)
 }
 

@@ -7,7 +7,7 @@ install_github(repo = "honzee/RNAseqCNVapp")
 ```
 
 ## Input
-The package uses expression info
+The package uses expression level and SNV information to estimate CNV of chromosomes and chromosomal arms.
 To run the shiny application or the wrapper for generating figures, **config file** and **metadata file** is needed.
 
 ### Metadata

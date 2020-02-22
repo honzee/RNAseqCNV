@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 30, q = 0.9) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8) {
 
     #Is any neccessary input missing?
     if (all(metadata == "no_input")) {showNotification("A metadata file is needed to generate figures", duration = 5, id = "not_conf", type = "message"); return(NULL) }
@@ -56,7 +56,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           }
 
           #calculate noemalized count values
-          count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, minReadCnt = minReadCnt, q = q, sample_num = i, base_col = base_col, base_matr = base_matr, weight_table = weight_table, keep_perc = 0.8, non_zero_samp = 0.8)
+          count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop)
 
           #check whether the count file is in correct format
           if (is.null(count_norm)) {

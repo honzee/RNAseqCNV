@@ -25,7 +25,7 @@
 #' @param q numeric value, see minReadCnt
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, keep_weight_prop = 0.5) {
+                              chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 0.6) {
 
   #Check the format
 
@@ -59,7 +59,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chroms)
 
     #calculate normalized count values
-    count_norm <- get_norm_exp_noDESeq(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, weight_table = weight_tab, minReadCnt = minReadCnt, samp_prop = samp_prop, keep_weight_prop = keep_weight_prop)
+    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
 
     #calculate medians for analyzed genes
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
