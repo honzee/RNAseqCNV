@@ -21,8 +21,7 @@ Imports:
 	data.table,
 	scales,
 	ggpubr,
-	DESeq2,
 	spatstat,
 	randomForest,
-	matrixStats
+	shinyFiles
 RoxygenNote: 7.0.2

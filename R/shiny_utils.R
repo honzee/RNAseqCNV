@@ -7,6 +7,7 @@
 #' @import stringr
 #' @importFrom data.table fread
 #' @import ggpubr
+#' @import shinyFiles
 
 #### functions for deseq norm testing ####
 
@@ -131,7 +132,6 @@ count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_tab_q) {
 
   #keeping only the genes which have weights calculated for geom_poit and boxplot
   count_ns = cbind(sENSGinfor, count_ns_tmp) %>% inner_join(weight_tab_q, by = "ENSG")
-  return(count_ns)
 }
 
 ####filter out par regions####

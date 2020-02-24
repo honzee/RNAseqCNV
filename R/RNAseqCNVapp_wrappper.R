@@ -5,7 +5,7 @@
 #' @param config R script assigning variables needed for the analysis
 #' @param metadata path to a metadata table with three columns. First colum represents sample names, second file names of count files, third file names of snv files.
 #' @param adjust logical value, determines, whether the diploid boxplots should be centered around zero on y axis
-#' @param arm_lvl logical value, determines, wheter arm_lvl figures should be printed (slows the computation significantly)
+#' @param arm_lvl logical value, determines, wheter arm_lvl figures should be printed (increases run-time significantly)
 #' @param estimate logical value, determines, whether alteration will be estimated
 #' @param referData table, reference data for ensamble name annotation
 #' @param keptSNP vector of SNPs to keep for the analysis
@@ -21,11 +21,12 @@
 #' @param scale_cols colour scaling for box plot
 #' @param dpRationChromEdge table with chromosome start and end base positions
 #' @param minDepth minimal depth of of SNV to be kept
-#' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: 0.9 quantile of read count per-gene in analyzed cohort > minReadCnt
-#' @param q numeric value, see minReadCnt
+#' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt
+#' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene
+#' @param weight_samp_prop proportion of samples to be kept according the their weight
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 0.6) {
+                              chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   #Check the format
 
@@ -73,10 +74,10 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     #arm-level metrics
     smpSNPdata_a_2 <- calc_arm(smpSNPdata.tmp)
 
-    count_ns <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
+    count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
     #join reference data and weight data
-    count_ns <- count_transform(count_ns = count_ns, pickGeneDFall, refDataExp = referData, weight_table)
+    count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refDataExp = referData, weight_table)
 
     #remove PAR regions
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_region)
@@ -85,7 +86,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
     #estimate gender
-    count_ns_gend <- count_ns %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+    count_ns_gend <- count_norm_sel %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
     gender = ifelse(randomForest:::predict.randomForest(model_gend, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
     #preprocess data for karyotype estimation and diploid level adjustement
@@ -133,37 +134,36 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
       count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChromEdge, ylim = ylim, chrs = chroms)
 
-      if(arm_lvl == TRUE) {
-
-        centr_res <- rescale_centr(centr_ref, count_ns_final)
-
-      }
-
       count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
+
+      #Create per-sample folder for figures
+      chr_dir = file.path(out_dir, sample_name)
+      dir.create(path = chr_dir)
 
       #plot arm-level figures
       if(arm_lvl == TRUE) {
 
-          chr_dir = file.path(out_dir, sample_name)
-          dir.create(path = chr_dir)
-          chr_to_plot <- c(1:22, "X")
+        chr_to_plot <- c(1:22, "X")
 
-      }
+        centr_res <- rescale_centr(centr_ref, count_ns_final)
 
-      #plot every chromosome
-      for (i in chr_to_plot) {
 
-        gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
+        #plot every chromosome
+        for (i in chr_to_plot) {
 
-        yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
+          gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
 
-        gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
+          yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
 
-        gg_snv_arm_q <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "q", plot_chr = i, yAxisMax = yAxisMax_arm)
+          gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
 
-        gg_arm <- chr_plot(p_snv = gg_snv_arm_p, q_snv = gg_snv_arm_q, arm_expr = gg_exp_zoom)
+          gg_snv_arm_q <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "q", plot_chr = i, yAxisMax = yAxisMax_arm)
 
-        ggsave(filename = file.path(chr_dir, paste0("chromosome_", i, ".png")), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
+          gg_arm <- chr_plot(p_snv = gg_snv_arm_p, q_snv = gg_snv_arm_q, arm_expr = gg_exp_zoom)
+
+          ggsave(filename = file.path(chr_dir, paste0("chromosome_", i, ".png")), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
+
+        }
 
       }
 

@@ -3,12 +3,12 @@ shinyAppServer <- function(input, output, session) {
 
   #change the size of possible upload
   options(shiny.maxRequestSize=30*1024^2)
+  volumes <- c(Home = fs::path_home(), "R Installation" = R.home(), getVolumes()())
 
   #do the directories from the input exist?
-  config <- reactive({
-
-    if (!is.null(input$config)) {
-      source(input$config$datapath)
+  observe({
+  if (!is.null(input$config)) {
+    source(input$config$datapath)
 
       #check count_dir
       if (!dir.exists(count_dir)) {
@@ -31,23 +31,23 @@ shinyAppServer <- function(input, output, session) {
         out <- out_dir
       }
 
-      return(c(count_dir = count, snv_dir = snv, out_dir = out))
+      react_val$config <- c(count_dir = count, snv_dir = snv, out_dir = out)
 
     } else {
-      return("no_input")
+      react_val$config <- "no_input"
     }
   })
 
 
   #render warning messages if directories don't exist
   output$mess_config <- renderText({
-    if(any(config() %in% "not_found")) {
+    if(any(react_val$config %in% "not_found")) {
 
       message <- NULL
 
-      for (i in 1:length(config())) {
-        if (config()[i] == "not_found") {
-          message <- paste0(message, '<br><font size="1px"><p style="text-align:left;"><font color="red">', names(config())[i], " was not found")
+      for (i in 1:length(react_val$config)) {
+        if (react_val$config[i] == "not_found") {
+          message <- paste0(message, '<br><font size="1px"><p style="text-align:left;"><font color="red">', names(react_val$config)[i], " was not found")
         }
       }
 
@@ -61,27 +61,27 @@ shinyAppServer <- function(input, output, session) {
 
 
   #check metadata file for three columns and read it
-  metadata <- reactive({
+  observe({
 
     if (is.null(input$metadata)) return("no_input")
 
     metadata_tab = fread(input$metadata$datapath, header = FALSE)
 
     if (ncol(metadata_tab) == 3) {
-      return(metadata_tab)
+      react_val$metadata <- metadata_tab
     } else {
-      return("incorrect_format")
+      react_val$metadata <- "incorrect_format"
     }
   })
 
   #render warning messages if metadata table does not have three columns
   output$mess_metadata <- renderText({
 
-    if (all(metadata() == "no_input")) return(NULL)
+    if (all( react_val$metadata == "no_input")) return(NULL)
 
-    if(all(metadata() == "incorrect_format")) {
+    if(all( react_val$metadata == "incorrect_format")) {
 
-      return('<font size="1px"><p style="text-align:left;"><font color="red">Metadata table does not have three columns')
+      return('<font size="1px"><p style="text-align:left;"><font color="red">metadata table does not have three columns')
 
     }
   })
@@ -90,21 +90,21 @@ shinyAppServer <- function(input, output, session) {
   #create a sample table
   sample_table <- reactive({
 
-    if (all(metadata() == "no_input")) return(NULL)
-    if (all(config() == "no_input")) return(NULL)
+    if (all(react_val$metadata == "no_input")) return(NULL)
+    if (all(react_val$config == "no_input")) return(NULL)
 
 
-    if (any(config() == "not_found")) return(NULL)
-    if (all(metadata() == "incorrect_format")) return(NULL)
+    if (any(react_val$config == "not_found")) return(NULL)
+    if (all(react_val$metadata == "incorrect_format")) return(NULL)
 
-    sample_table <- metadata()
+    sample_table <-  react_val$metadata
 
     HTSeq_f = pull(sample_table, 2)
     snv_f = pull(sample_table, 3)
 
     #create paths to the files
-    sample_table$count_path <- file.path(config()["count_dir"], HTSeq_f)
-    sample_table$snv_path <-  file.path(config()["snv_dir"], snv_f)
+    sample_table$count_path <- file.path(react_val$config["count_dir"], HTSeq_f)
+    sample_table$snv_path <-  file.path(react_val$config["snv_dir"], snv_f)
     return(sample_table)
   })
 
@@ -125,16 +125,16 @@ shinyAppServer <- function(input, output, session) {
   # ####Generate a figure from the first file in sample table######
   figures <- eventReactive(input$preview, {
 
-    gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+    gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
                     refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                    base_matr, base_col, scaleCols, dpRatioChrEdge)
+                    diploid_standard, scaleCols, dpRatioChrEdge)
 
-    chr_figs <- file.path(config()["out_dir"], sample_table()[1, 1], paste0("chromosome_", c(1:22, "X"), ".png"))
-    main_fig <- file.path(config()["out_dir"], sample_table()[1, 1], paste0(sample_table()[1, 1], "_CNV_main_fig.png"))
+    chr_figs <- file.path(react_val$config["out_dir"], sample_table()[1, 1], paste0("chromosome_", c(1:22, "X"), ".png"))
+    main_fig <- file.path(react_val$config["out_dir"], sample_table()[1, 1], paste0(sample_table()[1, 1], "_CNV_main_fig.png"))
 
     figures <- list(chr_figs = chr_figs, main_fig = main_fig)
 
-    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+    def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
     react_val$man_table <- def_table
     react_val$def_table <- def_table
     react_val$check <- TRUE
@@ -144,10 +144,14 @@ shinyAppServer <- function(input, output, session) {
 
   # Render main fig image for the first sample analysis
   output$main_fig_prev <- renderImage({
+
+    width  <- session$clientData$output_myImage_width
+    height <- session$clientData$output_myImage_height
+
     list(src = figures()$main_fig,
          contentType = "image/png",
-         width = "100%",
-         height = "auto"
+         width = width,
+         height = height/2
     )
   }, deleteFile = FALSE)
 
@@ -181,14 +185,22 @@ shinyAppServer <- function(input, output, session) {
   ####Analyze all samples and save figures####
   observeEvent(input$analyze, {
 
-      gen_fig_wrapper(config(), metadata(), avail(), sample_table(), to_analyse = nrow(metadata()), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
-                      refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
-                      base_matr, base_col, scaleCols, dpRatioChrEdge)
+    if (!is.null(react_val$config) & !is.null(react_val$metadata)) {
 
-    def_table <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
-    react_val$man_table <- def_table
-    react_val$def_table <- def_table
-    react_val$check <- TRUE
+      if (react_val$config != "no_input" & react_val$metadata != "no_input") {
+
+        gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+                        refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
+                        diploid_standard, scaleCols, dpRatioChrEdge)
+
+        def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+        react_val$man_table <- def_table
+        react_val$def_table <- def_table
+        react_val$check <- TRUE
+
+      }
+
+    }
 
   })
 
@@ -196,7 +208,7 @@ shinyAppServer <- function(input, output, session) {
   #render select button for scrolling through jpg files
   output$figure_select <- renderUI({
 
-    config()["out_dir"]
+    react_val$config["out_dir"]
 
     if (react_val$check == FALSE) return(NULL)
 
@@ -206,12 +218,12 @@ shinyAppServer <- function(input, output, session) {
   })
 
   #read default estimation table in case config file is changed
-  observeEvent(config(), {
+  observeEvent(react_val$config, {
 
-    table_exists <- file.exists(paste0(config()["out_dir"], "/", "estimation_table.tsv"))
+    table_exists <- file.exists(paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_def <- read.table(file = paste0(config()["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+      est_def <- read.table(file = paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
       est_def <- cbind(est_def, status = "not checked", comments = "none")
 
       react_val$def_table <- est_def
@@ -222,12 +234,12 @@ shinyAppServer <- function(input, output, session) {
   })
 
   #read estimation table for manual curration in case config file is changed
-  observeEvent(config(), {
+  observeEvent(react_val$config, {
 
-    table_exists <- file.exists(paste0(config()["out_dir"], "/", "manual_an_table.tsv"))
+    table_exists <- file.exists(paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_man <- read.table(file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+      est_man <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
 
       react_val$man_table <- est_man
 
@@ -242,8 +254,9 @@ shinyAppServer <- function(input, output, session) {
   fig_sam <- reactive({
 
     input$config
+    react_val$check
 
-    figs = sub(".*/", "", list.files(path = config()["out_dir"], pattern = "_CNV_main_fig.png", recursive = TRUE, full.names = FALSE))
+    figs = sub(".*/", "", list.files(path = react_val$config["out_dir"], pattern = "_CNV_main_fig.png", recursive = TRUE, full.names = FALSE))
 
     if(length(figs) == 0) return(NULL)
 
@@ -292,7 +305,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render image based on the select button####
   output$main_fig <- renderImage({
-    list(src = paste0(config()["out_dir"], "/", input$sel_sample, "/", input$sel_sample,  "_CNV_main_fig.png"),
+    list(src = paste0(react_val$config["out_dir"], "/", input$sel_sample, "/", input$sel_sample,  "_CNV_main_fig.png"),
          contentType = "image/png",
          width = "100%",
          height = "auto"
@@ -303,7 +316,7 @@ shinyAppServer <- function(input, output, session) {
   #render choices for selectInput from generated chromosome figures
   chr_choices <- eventReactive(input$sel_sample, {
 
-    chromosomes <- list.files(path = paste0(config()["out_dir"], "/", input$sel_sample, "/"), pattern = "^chromosome_.*.png$")
+    chromosomes <- list.files(path = paste0(react_val$config["out_dir"], "/", input$sel_sample, "/"), pattern = "^chromosome_.*.png$")
 
     if (length(chromosomes) == 0) {
       return(NULL)
@@ -346,7 +359,7 @@ shinyAppServer <- function(input, output, session) {
   #render chromosome image
   output$chr_fig <- renderImage({
 
-    list(src = paste0(config()["out_dir"], "/", input$sel_sample, "/", image()),
+    list(src = paste0(react_val$config["out_dir"], "/", input$sel_sample, "/", image()),
          contentType = "image/png",
          width = "100%",
          height = "auto")
@@ -372,14 +385,16 @@ shinyAppServer <- function(input, output, session) {
 
     #update type
     type <- react_val$man_table$type[react_val$man_table$sample == sel]
-    output$type_text <- renderUI({
-      textInput(inputId = "type_text", value = type, label = "Type in karyotypic subtype")
+    output$type_select <- renderUI({
+      types = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")
+      selectInput(inputId = "type_select", choices = types, selected = type, label = "Select subtype")
     })
 
     #update gender
     gender <- react_val$man_table$gender[react_val$man_table$sample == sel]
-    output$gender_text <- renderUI({
-      textInput(inputId = "gender_text", value = gender, label = "Type in the gender of the sample")
+    output$gender_select <- renderUI({
+      sexes <- c("male", "female")
+      selectInput(inputId = "gender_select", choices = sexes, selected = gender, label = "Select gender of the sample")
     })
 
     #update chromosome number
@@ -461,33 +476,33 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$save_changes, {
 
     #read in table for manual analysis
-    man_an <- read.table(paste0(config()["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+    man_an <- read.table(paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
 
     #change values from text input
     sam_ind <- which(man_an$sample == input$sel_sample)
-    man_an[sam_ind, "type"] <- input$type_text
-    man_an[sam_ind, "gender"] <- input$gender_text
+    man_an[sam_ind, "type"] <- input$type_select
+    man_an[sam_ind, "gender"] <- input$gender_select
     man_an[sam_ind, "chrom_n"] <- input$chromn_text
     man_an[sam_ind, "alterations"] <- input$alt_text
     man_an[sam_ind, "comments"] <- input$comments_text
     man_an[sam_ind, "status"] <- "checked"
 
-    write.table(man_an, file = paste0(config()["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
+    write.table(man_an, file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
     react_val$man_table <- man_an
 
   })
 
   #keep track of which files have and havn't been checked and of unsaved changes
-  observeEvent(c(input$type_text,
-                 input$gender_text,
+  observeEvent(c(input$type_select,
+                 input$gender_select,
                  input$chromn_text,
                  input$alt_text,
                  input$comments_text,
                  input$save_changes
   ), {
     #do not run the code if input values are null
-    if (is.null(input$type_text) |
-        is.null(input$gender_text) |
+    if (is.null(input$type_select) |
+        is.null(input$gender_select) |
         is.null(input$chromn_text) |
         is.null(input$alt_text) |
         is.null(input$comments_text)
@@ -495,8 +510,8 @@ shinyAppServer <- function(input, output, session) {
       return(NULL)
     } else {
       #check whether any text input changed
-      if(input$type_text != as.character(react_val$man_table$type[react_val$man_table$sample == input$sel_sample]) |
-         input$gender_text != as.character(react_val$man_table$gender[react_val$man_table$sample == input$sel_sample]) |
+      if(input$type_select != as.character(react_val$man_table$type[react_val$man_table$sample == input$sel_sample]) |
+         input$gender_select != as.character(react_val$man_table$gender[react_val$man_table$sample == input$sel_sample]) |
          input$chromn_text != as.character(react_val$man_table$chrom_n[react_val$man_table$sample == input$sel_sample]) |
          input$alt_text != as.character(react_val$man_table$alterations[react_val$man_table$sample == input$sel_sample]) |
          input$comments_text != as.character(react_val$man_table$comments[react_val$man_table$sample == input$sel_sample])
@@ -579,10 +594,10 @@ shinyAppServer <- function(input, output, session) {
 
     #update type
     def_type <- react_val$def_table$type[react_val$def_table$sample == input$sel_sample]
-    updateTextInput(session, inputId = "type_text", value = def_type)
+    updateTextInput(session, inputId = "type_select", value = def_type)
     #update gender
     def_gender <- react_val$def_table$gender[react_val$def_table$sample == input$sel_sample]
-    updateTextInput(session, inputId = "gender_text", value = def_gender)
+    updateTextInput(session, inputId = "gender_select", value = def_gender)
     #update chromosome number
     def_chromn <- react_val$def_table$chrom_n[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "chromn_text", value = def_chromn)
@@ -612,25 +627,12 @@ shinyAppServer <- function(input, output, session) {
 
   })
 
-  #render warning message if export directory does not exist
-  output$mess_exp_out <- renderText({
-    if (dir.exists(input$exp_out_dir) == FALSE & !is.null(input$exp_out_dir)) {
-      return('<font size="1px"><p style="text-align:left;"><font color="red">Could not find this directory')
-    }
-  })
-
-
   #render radio buttons for export format
   output$format <- renderUI({
 
     radioButtons("format", "Choose format to export the file in", choices = c(".csv", ".tsv"), selected = ".csv")
   })
 
-  #render the export button
-  output$export <- renderUI({
-
-    actionButton("export", "Export the table")
-  })
 
   #render preview for table to export
   output$prev_tab <- renderTable({
@@ -640,49 +642,26 @@ shinyAppServer <- function(input, output, session) {
 
   })
 
-  #export table when actionButton is clicked
+  #Save the manually currated table after user selected a directory
+  shinyDirChoose(input, "export", roots = volumes, session = session)
+
   observeEvent(input$export, {
 
-    if (input$exp_out_dir == "") {
-      out_dir <- config()["out_dir"]
-    } else if (dir.exists(input$exp_out_dir) == FALSE) {
-      return(showNotification("Could not find this directory", duration = 5, type = "message"))
-    } else {
-      out_dir <- input$exp_out_dir
-    }
+     if (!is.integer(input$export) & length(input$export) > 1) {
 
-    table <- react_val$man_table %>% select("sample", input$columns)
+      table <- react_val$man_table %>% select("sample", input$columns)
+      exp_dir <- parseDirPath(volumes, input$export)
 
-    #save a format based on the input from radio_buttons
-
-    if (input$format == ".csv") {
-      write.csv(x = table, file = paste0(out_dir, "/RNAseqCNA_an_table.csv"), row.names = FALSE)
-    }
-
-    if (input$format == ".tsv") {
-      write.csv(x = table, file = paste0(out_dir, "/RNAseqCNA_an_table.tsv"), sep = "\t", row.names = FALSE)
-    }
-
-    output$export_mess <- renderText({
-      if (file.exists(paste0(out_dir, "/RNAseqCNA_an_table", input$format))) {
-        paste0('<font color="green">', "<b>", "saved")
-      } else {
-        paste0('<font color="red">', "<b>", "failed")
+      if (input$format == ".csv") {
+        write.csv(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.csv"), row.names = FALSE)
       }
-    })
+
+      if (input$format == ".tsv") {
+        write.table(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.tsv"), sep = "\t", row.names = FALSE)
+      }
+    }
 
   })
-
-  #hide the export message if any value changes
-  observeEvent(c(input$columns,
-                 input$exp_out_dir,
-                 input$format), {
-
-                   output$export_mess <- renderText({
-                     return("")
-                   })
-
-                 })
 
 
   #create a vector of input alterations
@@ -727,6 +706,30 @@ shinyAppServer <- function(input, output, session) {
 
     if (!is.null(input$alt_text)) {
       '<font size="2px"><p style="text-align:left;">Prefered format: 1+,3-,6p+,Xq-'
+    }
+  })
+
+  #render button for choosing mock output directory
+  shinyDirChoose(input, "dir_button", roots = volumes, session = session)
+
+ #perform mock analysis when mock output directory is selected
+  observeEvent(input$dir_button, {
+
+    if (!is.integer(input$dir_button)) {
+
+      source(system.file(package = "RNAseqCNVapp", "inst/extdata/config_mock.txt"))
+      react_val$config <- c(count_dir = count_dir, snv_dir = snv_dir, out_dir = parseDirPath(volumes, input$dir_button))
+      react_val$metadata <- fread(system.file(package = "RNAseqCNVapp", "inst/extdata/metadata_mock"), header = FALSE)
+      sample_table <-  react_val$metadata %>% mutate(count_path = file.path(react_val$config["count_dir"], pull(., 2)), snv_path = file.path(react_val$config["snv_dir"], pull(., 3)))
+
+          gen_fig_wrapper(react_val$config,  react_val$metadata, avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+                          refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
+                          diploid_standard, scaleCols, dpRatioChrEdge)
+
+          def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+          react_val$man_table <- def_table
+          react_val$def_table <- def_table
+          react_val$check <- TRUE
     }
   })
 

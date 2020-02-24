@@ -26,8 +26,12 @@ shinyAppUi <- navbarPage("RNAseq CNA analysis", id = "tabs",
                                         actionButton("preview", "Analyze first sample"),
                                         br(),
                                         br(),
-                                        actionButton("analyze", "Analyze all samples")
+                                        actionButton("analyze", "Analyze all samples"),
+                                        br(),
+                                        br(),
+                                        shinyDirButton("dir_button", "Mock analysis", "Please select output directory for mock analysis")
                                       ),
+
                                       mainPanel(
                                         imageOutput("main_fig_prev", width = "100%", height = "auto"),
                                         conditionalPanel(condition = "output.chr_fig_prev != null",
@@ -66,10 +70,10 @@ shinyAppUi <- navbarPage("RNAseq CNA analysis", id = "tabs",
                                                br(),
                                                h3("Estimation correction"),
                                                br(),
-                                               uiOutput("type_text"),
+                                               uiOutput("type_select"),
                                                br(),
                                                br(),
-                                               uiOutput("gender_text"),
+                                               uiOutput("gender_select"),
                                                br(),
                                                br(),
                                                uiOutput("chromn_text"),
@@ -144,15 +148,10 @@ shinyAppUi <- navbarPage("RNAseq CNA analysis", id = "tabs",
                                         uiOutput("columns"),
                                         br(),
                                         br(),
-                                        textInput("exp_out_dir", "Path to directory"),
-                                        htmlOutput("mess_exp_out"),
-                                        br(),
-                                        br(),
                                         uiOutput("format"),
                                         br(),
                                         br(),
-                                        uiOutput("export"),
-                                        htmlOutput("export_mess")
+                                        shinyDirButton("export", label = "Export to selected directory", title = "Select directory")
 
                                       ),
 

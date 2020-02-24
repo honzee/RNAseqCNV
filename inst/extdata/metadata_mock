@@ -1,4 +1,4 @@
-1 diploid diploid.HTSeq diploid.snv
-2 high_hyperdiploid high_hyperdiploid.HTSeq high_hyperdiploid.snv
-3 low_hypodiploid low_hypodiploid.HTSeq low_hypodiploid.snv
-4 near_haploid near_haploid.HTSeq near_haploid.snv
+diploid diploid.HTSeq diploid.snv
+high_hyperdiploid high_hyperdiploid.HTSeq high_hyperdiploid.snv
+low_hypodiploid low_hypodiploid.HTSeq low_hypodiploid.snv
+near_haploid near_haploid.HTSeq near_haploid.snv

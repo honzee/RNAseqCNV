@@ -1,5 +1,6 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, base_matr, base_col, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+
 
     #Is any neccessary input missing?
     if (all(metadata == "no_input")) {showNotification("A metadata file is needed to generate figures", duration = 5, id = "not_conf", type = "message"); return(NULL) }
@@ -56,7 +57,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           }
 
           #calculate noemalized count values
-          count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop)
+          count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop)
 
           #check whether the count file is in correct format
           if (is.null(count_norm)) {
@@ -85,10 +86,10 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           incProgress(amount = 0.1, detail = "Prepring expression data")
 
-          count_ns <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
+          count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
           #join reference data and weight datacount_trans
-          count_ns <- count_transform(count_ns = count_ns, pickGeneDFall, refData, weight_table)
+          count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refData, weight_table)
 
           #remove PAR regions
           count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
@@ -96,7 +97,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
           #estimate gender
-          count_ns_gend <- count_ns %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+          count_ns_gend <- count_norm_sel %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
           gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement
@@ -157,33 +158,37 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
 
+          #Create per-sample folder for figures
+          chr_dir = file.path(out_dir, sample_name)
+          dir.create(path = chr_dir)
+
           #plot arm-level figures
           if(arm_lvl == TRUE) {
 
-            incProgress(amount = 0.08, detail = "Plotting chromosomes in detail")
-
-            chr_dir <- paste0(config["out_dir"], "/", sample_name)
-            dir.create(path = chr_dir)
             chr_to_plot <- c(1:22, "X")
 
+            centr_res <- rescale_centr(centr_ref, count_ns_final)
 
+
+            #plot every chromosome
             for (i in chr_to_plot) {
 
               gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
 
-              yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata_a, plot_chr = i)
+              yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
 
-              gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
+              gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
 
-              gg_snv_arm_q <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a, plot_arm = "q", plot_chr = i, yAxisMax = yAxisMax_arm)
+              gg_snv_arm_q <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "q", plot_chr = i, yAxisMax = yAxisMax_arm)
 
               gg_arm <- chr_plot(p_snv = gg_snv_arm_p, q_snv = gg_snv_arm_q, arm_expr = gg_exp_zoom)
 
-              ggsave(filename = paste0(config["out_dir"], "/", sample_name, "/", "chromosome_", i, ".png"), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
+              ggsave(filename = file.path(chr_dir, paste0("chromosome_", i, ".png")), plot = gg_arm, device = "png", width = 20, height = 10, dpi = 100)
 
             }
 
           }
+
 
 
           incProgress(amount = 0.02, detail = "Plotting main figure")

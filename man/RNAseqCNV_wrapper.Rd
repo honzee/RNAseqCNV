@@ -19,15 +19,13 @@ RNAseqCNV_wrapper(
   model_dip = model_dipl,
   model_alter = model_alt,
   chroms = chrs,
-  base_matrix = base_matr,
-  base_column = base_col,
+  dipl_standard = diploid_standard,
   scale_cols = scaleCols,
   dpRatioChromEdge = dpRatioChrEdge,
   minDepth = 20,
-  minReadCnt = 30,
-  q = 0.9,
-  treshold,
-  samp_perc
+  minReadCnt = 3,
+  samp_prop = 0.8,
+  weight_samp_prop = 1
 )
 }
 \arguments{
@@ -37,7 +35,7 @@ RNAseqCNV_wrapper(
 
 \item{adjust}{logical value, determines, whether the diploid boxplots should be centered around zero on y axis}
 
-\item{arm_lvl}{logical value, determines, wheter arm_lvl figures should be printed (slows the computation significantly)}
+\item{arm_lvl}{logical value, determines, wheter arm_lvl figures should be printed (increases run-time significantly)}
 
 \item{estimate}{logical value, determines, whether alteration will be estimated}
 
@@ -59,17 +57,19 @@ RNAseqCNV_wrapper(
 
 \item{chroms}{vector of chromosomes to be analyzed}
 
-\item{base_matrix}{matrix with rows being gene expression and columns DIPLOID samples. This matrix is used as a diploid reference.}
-
-\item{base_column}{column names for base_matrix parameter}
-
 \item{scale_cols}{colour scaling for box plot}
 
 \item{minDepth}{minimal depth of of SNV to be kept}
 
-\item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: 0.9 quantile of read count per-gene in analyzed cohort > minReadCnt}
+\item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt}
 
-\item{q}{numeric value, see minReadCnt}
+\item{samp_prop}{sample proportion which is required to have at least minReadCnt reads for a gene}
+
+\item{weight_samp_prop}{proportion of samples to be kept according the their weight}
+
+\item{base_matrix}{matrix with rows being gene expression and columns DIPLOID samples. This matrix is used as a diploid reference.}
+
+\item{base_column}{column names for base_matrix parameter}
 
 \item{dpRationChromEdge}{table with chromosome start and end base positions}
 }
