@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
 
     #Is any neccessary input missing?
@@ -22,11 +22,6 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
                               type = factor(levels = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")),
                               alterations = character(), stringsAsFactors = FALSE)
 
-      #Create a log file to keep track of the analysis
-      log <-  paste0(config["out_dir"], "/", "log.txt")
-      cat("", file = log)
-
-
     #Run the code with progress bar
     withProgress(message = "Analyzing..", value = 0, {
 
@@ -47,25 +42,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           #load SNP data
           smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chrs)
 
-          #check whether the snv file is in correct format
-          if(is.null(smpSNP)) {
-
-            writeLines(c(readLines(log), paste("File", sample_table$snv_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
-            incProgress(amount = 1/nrow(sample_table), message = "File skipped")
-            next()
-
-          }
-
           #calculate noemalized count values
           count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop)
-
-          #check whether the count file is in correct format
-          if (is.null(count_norm)) {
-              writeLines(c(readLines(log), paste("File", sample_table$count_path[i], "has an unsupported format"), paste("Sample", sample_name, "skipped")), con = log)
-              incProgress(amount = 1/nrow(sample_table), message = "File skipped")
-              next()
-          }
-
 
           incProgress(amount = 0.5, detail = "Calculating expression medians for each gene")
 
@@ -84,7 +62,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           #arm-level metrics
           smpSNPdata_a_2 <- calc_arm(smpSNPdata.tmp)
 
-          incProgress(amount = 0.1, detail = "Prepring expression data")
+          incProgress(amount = 0.1, detail = "Analysing expression data")
 
           count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
@@ -101,8 +79,6 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement
-          if (adjust == TRUE | estimate == TRUE) {
-
             incProgress(amount = 0.05, detail = "Estimating diploid baseline")
 
             feat_tab$chr_status <- randomForest:::predict.randomForest(model_dipl, feat_tab, type = "class")
@@ -116,23 +92,14 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
             feat_tab_alt <- colour_code(feat_tab_alt) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
-          } else {
-            incProgress(amount = 0.05)
-          }
-
-
           #estimate karyotype
-          if (estimate == TRUE) {
-
-            incProgress(amount = 0.05, detail = "Estimating karyotype")
+          incProgress(amount = 0.05, detail = "Estimating karyotype")
 
             kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
             est_table <- rbind(est_table, kar_list)
             write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t", quote = FALSE)
             write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
-
-          }
 
           #adjust for diploid level
           if (adjust == TRUE) {
@@ -164,6 +131,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           #plot arm-level figures
           if(arm_lvl == TRUE) {
+            incProgress(amount = 0.05, detail = "Plotting arm-level figures")
 
             chr_to_plot <- c(1:22, "X")
 
@@ -173,7 +141,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
             #plot every chromosome
             for (i in chr_to_plot) {
 
-              gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate, feat_tab_alt = feat_tab_alt)
+              gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate_lab, feat_tab_alt = feat_tab_alt)
 
               yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
 
@@ -193,15 +161,13 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           incProgress(amount = 0.02, detail = "Plotting main figure")
 
-          gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate, feat_tab_alt = feat_tab_alt, gender = gender)
+          gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
 
           gg_snv <- plot_snv(smpSNPdata, chrs = chrs, sample_name = sample_name)
 
           fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 
           ggsave(plot = fig, filename = paste0(chr_dir, "/", sample_name, "_CNV_main_fig.png"), device = 'png', width = 16, height = 10, dpi = 200)
-
-          writeLines(c(readLines(log), paste("Sample", sample_name, "analyzed successfully")), con = log)
 
         })
       }

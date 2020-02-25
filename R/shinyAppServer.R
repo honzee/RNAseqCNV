@@ -125,7 +125,7 @@ shinyAppServer <- function(input, output, session) {
   # ####Generate a figure from the first file in sample table######
   figures <- eventReactive(input$preview, {
 
-    gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+    gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
                     refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                     diploid_standard, scaleCols, dpRatioChrEdge)
 
@@ -150,8 +150,8 @@ shinyAppServer <- function(input, output, session) {
 
     list(src = figures()$main_fig,
          contentType = "image/png",
-         width = width,
-         height = height/2
+         width = "100%",
+         height = "auto"
     )
   }, deleteFile = FALSE)
 
@@ -189,7 +189,7 @@ shinyAppServer <- function(input, output, session) {
 
       if (react_val$config != "no_input" & react_val$metadata != "no_input") {
 
-        gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+        gen_fig_wrapper(react_val$config,  react_val$metadata, avail(), sample_table(), to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
                         refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                         diploid_standard, scaleCols, dpRatioChrEdge)
 
@@ -722,7 +722,7 @@ shinyAppServer <- function(input, output, session) {
       react_val$metadata <- fread(system.file(package = "RNAseqCNVapp", "inst/extdata/metadata_mock"), header = FALSE)
       sample_table <-  react_val$metadata %>% mutate(count_path = file.path(react_val$config["count_dir"], pull(., 2)), snv_path = file.path(react_val$config["snv_dir"], pull(., 3)))
 
-          gen_fig_wrapper(react_val$config,  react_val$metadata, avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate = input$estimate,
+          gen_fig_wrapper(react_val$config,  react_val$metadata, avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
                           refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs,
                           diploid_standard, scaleCols, dpRatioChrEdge)
 
