@@ -7,7 +7,10 @@ install_github(repo = "honzee/RNAseqCNVapp")
 ```
 
 ## Input
-The package uses expression level and SNV information to estimate CNV of chromosomes and chromosomal arms.
+The package uses expression level and SNV information to estimate CNV of chromosomes and chromosomal arms. Each samples must have two input files. 
+1. An output of HTSeq or similar read counting software, with the output having two columns: one with ensembl gene names and the second column with count number.
+2. .snv file. An SNV file can be acquired by running GATK pipeline to get .vcf file. .vcf file can be subsequntly converted into .snv with perl script included in the package: "/path_to/library/RNAseqCNVapp/inst/vcf_to_snv.pl.txt"
+
 To run the shiny application or the wrapper for generating figures, **config file** and **metadata file** is needed.
 
 ### Metadata
