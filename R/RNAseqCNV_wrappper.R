@@ -28,17 +28,39 @@
 RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
-  #Check the format
+  #Check the config file
+  out_dir <- NULL
+  count_dir <- NULL
+  snv_dir <- NULL
+
+  source(config, local = TRUE)
+  if (is.null(out_dir) | is.null(count_dir) | is.null(snv_dir)) {
+    stop("Incorrect config file format")
+  } else if (!dir.exists(out_dir) | !dir.exists(snv_dir) | !dir.exists(count_dir)) {
+    stop("Directory from config file does not exist")
+  }
+
+  #check metadata file
+  metadata_tab = fread(metadata, header = FALSE)
+  if (ncol(metadata_tab) != 3) {
+    stop("The number of columns in metadata table should be 3")
+  }
 
   #Create sample table
-  source(config)
+  sample_table = metadata_tab %>% mutate(count_path = file.path(count_dir, pull(metadata_tab, 2)), snv_path = file.path(snv_dir, pull(metadata_tab, 3)))
 
-  sample_table = fread(metadata, header = FALSE)
-  count_f = pull(sample_table, 2)
-  snv_f = pull(sample_table, 3)
-  #create paths to the files
-  sample_table$count_path <- file.path(count_dir, count_f)
-  sample_table$snv_path <-  file.path(snv_dir, snv_f)
+  #check files
+  count_check <- file.exists(sample_table$count_path)
+  snv_check <- file.exists(sample_table$snv_path)
+
+  if (any(!c(count_check, snv_check))) {
+    count_miss <- sample_table$count_path[!count_check]
+    snv_miss <- sample_table$snv_path[!snv_check]
+
+    files_miss <- paste0(c(count_miss, snv_miss), collapse = ", ")
+
+    stop(paste0("File/s: ", files_miss, " not found"))
+  }
 
   #Create estimation table
   est_table <- data.frame(sample = character(),
@@ -46,10 +68,6 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
                           chrom_n = integer(),
                           type = factor(levels = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")),
                           alterations = character(), stringsAsFactors = FALSE)
-
-  #Create a log file to keep track of the analysis
-  log <-  file.path(out_dir, "log.txt")
-  cat("", file = log)
 
   #Run the analysis for every sample in the table
   for(i in 1:nrow(sample_table)) {
@@ -77,7 +95,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
 
     #join reference data and weight data
-    count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refDataExp = referData, weight_table)
+    count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refDataExp = referData, weight_table = weight_tab)
 
     #remove PAR regions
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_region)

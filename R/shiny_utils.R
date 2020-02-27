@@ -20,6 +20,9 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
 
   #read the count table
   count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
+  if (ncol(count_table) != 1 | !is.numeric(count_table[, 1])) {
+    stop(paste0("Count table: ", count_file, " is in incorrect format"))
+  }
 
   #check the count file format
   if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
@@ -45,14 +48,6 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   for (i in 1:ncol(count_filt)) {
     count_norm[, i] <- count_filt[, i]/size_fac[i]
   }
-
-  # #calculate per-gene standard geom_mean and remove zeros for size factor calculation
-  # pseudo_ref_des <- apply(X = count_filt, MARGIN = 1, function(x) gm_mean(x))
-  # low_exp <- which(pseudo_ref_des == 0)
-  # size_fac <- median(final_mat[-low_exp, 1]/pseudo_ref_des[-low_exp])
-  #
-  # #Divide each column by size factor
-  # count_norm <- count_filt[, 1]/size_fac
 
   print(paste0("Normalization for sample: ", sample_n, " completed"))
   count_final = round(data.frame(count_norm, digits = 2))
@@ -87,7 +82,9 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs) {
   smpSNP=list()
   print(paste("preparing MAF file:", sample_n) )
   rnaData <- fread(snv_file)
-  if (ncol(rnaData) != 11 | all(sapply(rnaData, class) == c("character", "integer", "character", "character", "integer", "numeric", "integer", "integer", "integer", "numeric", "numeric")) != TRUE) return(NULL)
+  if (ncol(rnaData) != 11 | all(sapply(rnaData, class) == c("character", "integer", "character", "character", "integer", "numeric", "integer", "integer", "integer", "numeric", "numeric")) != TRUE) {
+    stop(paste0("Incorrect ", snv_file, " file format"))
+  }
   rnaData <- rnaData %>% select(1:11) %>% magrittr::set_colnames(header)
   smpSNP[[sample_n]] <- rnaData %>% filter(chr %in% chrs, depth > minDepth ) %>%
     mutate(chr = factor(chr, levels=chrs), ID=paste0(chr,"-", start), sampleID=sample_n) %>% left_join(centr_ref, by = "chr") %>% mutate(arm = ifelse(start < cstart, "p", ifelse(start > cend, "q", "centr")))
@@ -125,13 +122,13 @@ calc_arm_lvl <- function(smpSNPdata.tmp) {
 
 ####normalize normalized counts (against median of expression for each gene) and join weight values####
 #beta-needs cleaning
-count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_tab_q) {
+count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_table) {
   count_ns_tmp = count_ns %>% left_join(pickGeneDFall, by = "ENSG") %>%
     mutate(count_nor_med=log2(.[, 1] / med) ) %>% filter(med != 0)
   sENSGinfor=refDataExp[match(count_ns_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
 
   #keeping only the genes which have weights calculated for geom_poit and boxplot
-  count_ns = cbind(sENSGinfor, count_ns_tmp) %>% inner_join(weight_tab_q, by = "ENSG")
+  count_ns = cbind(sENSGinfor, count_ns_tmp) %>% inner_join(weight_table, by = "ENSG")
 }
 
 ####filter out par regions####

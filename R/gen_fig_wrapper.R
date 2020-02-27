@@ -155,6 +155,8 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
             }
 
+          } else {
+            incProgress(amount = 0.05)
           }
 
 
