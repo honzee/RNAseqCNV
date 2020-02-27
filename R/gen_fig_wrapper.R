@@ -126,7 +126,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
 
           #Create per-sample folder for figures
-          chr_dir = file.path(out_dir, sample_name)
+          chr_dir = file.path(config["out_dir"], sample_name)
           dir.create(path = chr_dir)
 
           #plot arm-level figures
