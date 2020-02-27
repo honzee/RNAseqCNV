@@ -1,4 +1,4 @@
-# RNAseqCNVapp tutorial
+# RNAseqCNV tutorial
 
 To download the package from gitub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
 ```
