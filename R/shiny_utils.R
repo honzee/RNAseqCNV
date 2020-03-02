@@ -65,7 +65,7 @@ get_med <- function(count_norm, refDataExp) {
 
   ####calculate median for all genes####
   pickGeneDFall=count_norm %>% mutate(ENSG=ENSG) %>% left_join(select(refDataExp, chr, ENSG), by = "ENSG") %>%
-    mutate(med= ifelse(chr != "Y", apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median), apply(.[, -c(ncol(.) - 1, ncol(.))], 1, function(x) quantile(x = x, 0.60)))) %>%
+    mutate(med = apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median)) %>%
     select(ENSG, med)
 
   return(pickGeneDFall)
@@ -449,7 +449,7 @@ adjust_dipl <- function(feat_tab_alt, count_ns) {
 get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref, chrs) {
 
   #calculate weighted median for every chromosome and use only 1:22
-  summ_arm <- count_ns %>% mutate(chr = factor(chr, levels = chrs)) %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
+  summ_arm <- count_ns %>% filter(!is.infinite(count_nor_med)) %>% mutate(chr = factor(chr, levels = chrs)) %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
     mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% group_by(chr, arm) %>%
 
     # get rid of 21 p arm
