@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
 
     #Is any neccessary input missing?
@@ -83,13 +83,22 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
             feat_tab$chr_status <- randomForest:::predict.randomForest(model_dipl, feat_tab, type = "class")
 
-            feat_tab_alt <- feat_tab %>%
-              filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>%
+            #exclude non-informative regions  and
+            #if the model was not able to call changes
+            #(mainly due problematic density graphs on chromosome X) change the value to unknown
+            feat_tab_dipl <- feat_tab %>%
+              filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>% mutate(chr_status = ifelse(is.na(chr_status), "unknown", as.character(chr_status))) %>%
               metr_dipl()
 
-            feat_tab_alt <- feat_tab_alt %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt, ., type = "class")))
-            feat_tab_alt$alteration_prob <- apply(randomForest:::predict.randomForest(model_alt, feat_tab_alt, type = "prob"), 1, max)
+            #model alteration on chromosome arms an in case of problematic SNV graph, use model without this information included
 
+            feat_tab_alt <- feat_tab_dipl %>% filter(chr_status != "unknown") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alt, ., type = "class")),
+                                                                                         alteration_prob = apply(randomForest:::predict.randomForest(model_alt, ., type = "prob"), 1, max))
+            if (any(feat_tab_dipl$chr_status == "unknown")) {
+              feat_tab_alt <- feat_tab_dipl %>% filter(chr_status == "unknown") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_noSNV, ., type = "class")),
+                                                                                           alteration_prob = apply(randomForest:::predict.randomForest(model_noSNV, ., type = "prob"), 1, max)) %>%
+                bind_rows(feat_tab_alt)
+            }
             feat_tab_alt <- colour_code(feat_tab_alt) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
           #estimate karyotype

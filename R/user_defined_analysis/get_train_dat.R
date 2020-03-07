@@ -29,7 +29,7 @@ get_train_dat <- function(config, metadata, weight_table = weight_table, standar
   for (i in 1:nrow(sample_table)) {
 
     # normalize gene expression
-    vst <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
+    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
 
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = refDataExp)
 
@@ -51,7 +51,7 @@ get_train_dat <- function(config, metadata, weight_table = weight_table, standar
     #remove PAR regions
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
 
-    summ_arm_train <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata, sample_name = sample_name, centr_ref = centr_ref)
+    summ_arm_train <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata, sample_name = sample_name, centr_ref = centr_ref, chrs = chrs)
 
     # merge with standard
     train_s = cbind(sample = sample_name, summ_arm_train) %>% mutate(chr = as.character(chr))

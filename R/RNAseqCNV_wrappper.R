@@ -26,7 +26,7 @@
 #' @param weight_samp_prop proportion of samples to be kept according the their weight
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+                              model_alter_noSNV = model_noSNV, chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   #Check the config file
   out_dir <- NULL
@@ -110,15 +110,22 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     #preprocess data for karyotype estimation and diploid level adjustement
     # model diploid level
     feat_tab$chr_status <- randomForest:::predict.randomForest(model_dip, feat_tab, type = "class")
-
-    #exclude non-informative regions
-    feat_tab_alt <- feat_tab %>%
-      filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>%
+    #exclude non-informative regions  and
+    #if the model was not able to call changes
+    #(mainly due problematic density graphs on chromosome X) change the value to unknown
+    feat_tab_dipl <- feat_tab %>%
+      filter(arm != "p" | !chr %in% c(13, 14, 15, 21)) %>% mutate(chr_status = ifelse(is.na(chr_status), "unknown", as.character(chr_status))) %>%
       metr_dipl()
 
-    #model alteration on chromosome arms
-    feat_tab_alt <- feat_tab_alt %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alter, ., type = "class")))
-    feat_tab_alt$alteration_prob <- apply(randomForest:::predict.randomForest(model_alter, feat_tab_alt, type = "prob"), 1, max)
+    #model alteration on chromosome arms an in case of problematic SNV graph, use model without this information included
+
+    feat_tab_alt <- feat_tab_dipl %>% filter(chr_status != "unknown") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alter, ., type = "class")),
+                                            alteration_prob = apply(randomForest:::predict.randomForest(model_alter, ., type = "prob"), 1, max))
+    if (any(feat_tab_dipl$chr_status == "unknown")) {
+      feat_tab_alt <- feat_tab_dipl %>% filter(chr_status == "unknown") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alter_noSNV, ., type = "class")),
+                                                                               alteration_prob = apply(randomForest:::predict.randomForest(model_alter_noSNV, ., type = "prob"), 1, max)) %>%
+        bind_rows(feat_tab_alt)
+    }
 
     feat_tab_alt <- colour_code(feat_tab_alt) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
