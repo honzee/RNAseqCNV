@@ -64,10 +64,11 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
 
           incProgress(amount = 0.1, detail = "Analysing expression data")
 
-          count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
+          #select sample
+          count_norm_samp <- count_norm %>% select(!!quo(sample_name)) %>% mutate(ENSG = rownames(.))
 
           #join reference data and weight datacount_trans
-          count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refData, weight_table)
+          count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refData, weight_table)
 
           #remove PAR regions
           count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
@@ -75,7 +76,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
           #estimate gender
-          count_ns_gend <- count_norm_sel %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+          count_ns_gend <- count_norm_samp %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
           gender = ifelse(randomForest:::predict.randomForest(model_gender, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement

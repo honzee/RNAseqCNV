@@ -653,11 +653,11 @@ shinyAppServer <- function(input, output, session) {
       exp_dir <- parseDirPath(volumes, input$export)
 
       if (input$format == ".csv") {
-        write.csv(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.csv"), row.names = FALSE)
+        write.csv(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.csv"), row.names = FALSE, quote = FALSE)
       }
 
       if (input$format == ".tsv") {
-        write.table(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.tsv"), sep = "\t", row.names = FALSE)
+        write.table(x = table, file = paste0(exp_dir, "/RNAseqCNA_an_table.tsv"), sep = "\t", row.names = FALSE, quote = FALSE)
       }
     }
 

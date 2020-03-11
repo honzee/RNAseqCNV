@@ -32,11 +32,17 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   #bind with baseline
   final_mat <- cbind(count_table, diploid_standard)
 
-  #filter genes based on reads count; top 1-q have read count > N and filter based]
-  keepIdx = as.data.frame(final_mat) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE) %>%
-    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>%  pull(id)
+  #keep genes for determining gender for later
+  gender_genes = final_mat %>% mutate(ENSG = rownames(.)) %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))
 
-  count_filt <- final_mat[c(keepIdx, which(rownames(final_mat) %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))), ]
+  #filter genes based on reads count; top 1-q have read count > N, filter base on weight
+  keepIdx = as.data.frame(final_mat) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE) %>%
+    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
+
+  # filter table for normalization, get rid of genes with 0 counts and keep genes for gender estimation
+  count_filt <- final_mat %>% mutate(ENSG = rownames(.)) %>% .[c(keepIdx), ] %>% .[pull(., 1) != 0, ] %>% bind_rows(gender_genes)
+  ENSG <- pull(count_filt, ENSG)
+  count_filt <- select(count_filt, -ENSG)
 
   #calculate per-gene standard geom_mean and remove zeros for size factor calculation
   pseudo_ref_des <- apply(X = count_filt, MARGIN = 1, function(x) gm_mean(x))
@@ -50,9 +56,9 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   }
 
   print(paste0("Normalization for sample: ", sample_n, " completed"))
-  count_final = round(data.frame(count_norm, digits = 2))
+  rownames(count_norm) <- ENSG
 
-  return(count_final)
+  return(count_norm)
 }
 
 #calculate geometric mean
@@ -173,7 +179,7 @@ adjust_ylim <- function(box_wdt, ylim) {
   return(ylim)
 }
 
-####Add edge datapoint and normalize point position and filter for low weight genes####
+####Apply limit to datapoints and normalize point position####
 prep_expr <- function(count_ns, dpRatioChrEdge, ylim, chrs) {
   count_ns_final= count_ns %>% select(chr, end, count_nor_med, weight) %>%
     bind_rows(dpRatioChrEdge) %>% filter(chr %in% c(1:22, "X"), between(count_nor_med, ylim[1], ylim[2]) ) %>%
@@ -219,9 +225,9 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
 ####plot snv density plots####
 plot_snv <- function(smpSNPdata, chrs, sample_name) {
 
-  missedChr=c(1:22, "X")[!c(1:22, "X") %in% smpSNPdata$chr]
+  missedChr=c(1:22, "X")[table(smpSNPdata$chr) < 15]
   if(length(missedChr) > 0){
-    tmpSNPdata=data.frame(sampleID = sample_name, ID=paste0(missedChr, "-1"), maf=0.5, chr=factor(missedChr, levels = chrs), start=1,
+    tmpSNPdata=data.frame(sampleID = sample_name, ID=paste0(missedChr, "-1"), maf=0.5, chr=factor(missedChr, levels = c(1:22, "X")), start=1,
                           depth=100, snvOrd=1, snvNum=1, peak_max=0, peak=0, peakCol="red", stringsAsFactors = F)
     smpSNPdata = bind_rows(smpSNPdata, tmpSNPdata)
   }

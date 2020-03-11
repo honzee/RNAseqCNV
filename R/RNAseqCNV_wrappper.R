@@ -92,10 +92,11 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     #arm-level metrics
     smpSNPdata_a_2 <- calc_arm(smpSNPdata.tmp)
 
-    count_norm_sel <- select(count_norm, !!quo(sample_name)) %>% mutate(ENSG = rownames(count_norm))
+    #select sample
+    count_norm_samp <- count_norm %>% select(!!quo(sample_name)) %>% mutate(ENSG = rownames(.))
 
     #join reference data and weight data
-    count_ns <- count_transform(count_ns = count_norm_sel, pickGeneDFall, refDataExp = referData, weight_table = weight_tab)
+    count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refDataExp = referData, weight_table = weight_tab)
 
     #remove PAR regions
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_region)
@@ -104,7 +105,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
     #estimate gender
-    count_ns_gend <- count_norm_sel %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+    count_ns_gend <- count_norm_samp %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
     gender = ifelse(randomForest:::predict.randomForest(model_gend, newdata = count_ns_gend, type = "class") == 1, "male", "female")
 
     #preprocess data for karyotype estimation and diploid level adjustement
@@ -133,8 +134,8 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
     est_table <- rbind(est_table, kar_list)
-    write.table(x = est_table, file = file.path(out_dir, "estimation_table.tsv"), sep = "\t")
-    write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t")
+    write.table(x = est_table, file = file.path(out_dir, "estimation_table.tsv"), sep = "\t", quote = FALSE)
+    write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t", quote = FALSE)
 
 
     #adjust for diploid level
