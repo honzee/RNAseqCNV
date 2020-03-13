@@ -1,5 +1,5 @@
 #' Fucnction that converts vcf files to tabular input for CNV analysis
-vcf_to_snv <- function(vcf_file) {
+vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
   #read the vcf files
   vcf_data <- vcfR::read.vcfR(vcf_file)
@@ -26,7 +26,7 @@ vcf_to_snv <- function(vcf_file) {
   colnames(snv_table) <- c("chr", "start", "ref", 'var', 'end', 'qual', 'depth', 'refDp', 'varDp', 'mapQ', "maf")
 
   #filtering base on maf and depth
-  snv_table <- snv_table %>% filter(maf > 0.01, depth > 5)
+  snv_table <- snv_table %>% filter(maf > maf_tresh, depth > depth_tresh)
   message("Conversion completed")
   return(snv_table)
 }

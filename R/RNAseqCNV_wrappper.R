@@ -128,7 +128,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
         bind_rows(feat_tab_alt)
     }
 
-    feat_tab_alt <- colour_code(feat_tab_alt) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
+    feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.82) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
     #estimate karyotype
     kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
@@ -187,7 +187,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
 
       gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
 
-      gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name)
+      gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name, estimate = estimate_lab)
 
       fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 

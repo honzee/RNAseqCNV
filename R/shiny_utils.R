@@ -183,7 +183,7 @@ adjust_ylim <- function(box_wdt, ylim) {
 prep_expr <- function(count_ns, dpRatioChrEdge, ylim, chrs) {
   count_ns_final= count_ns %>% select(chr, end, count_nor_med, weight) %>%
     bind_rows(dpRatioChrEdge) %>% filter(chr %in% c(1:22, "X"), between(count_nor_med, ylim[1], ylim[2]) ) %>%
-    mutate(chr=factor(chr, levels=chrs)) %>%
+    mutate(chr=factor(chr, levels = c(1:22, "X"))) %>%
     arrange(chr, end) %>% group_by(chr) %>%
     mutate(normPos=scales::rescale(end, from = range(end, na.rm = TRUE)))
   return(count_ns_final)
@@ -197,33 +197,40 @@ filter_expr <- function(count_ns_final, cutoff = 0.6) {
 plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
   gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized expression") +
     scale_fill_identity()+
-    geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32)+
+    geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32, show.legend = FALSE)+
     scale_size(range = c(2, 6)) +
     #scale_alpha(range = c(0.22, 0.4)) +
-    geom_boxplot(data = box_wdt, aes(ymin = min, lower = low, middle = med_weig, upper = high, ymax = max, fill=medianCol, x = pos), alpha=0.75, outlier.colour = NA, stat = "identity")+
+    geom_boxplot(data = box_wdt, aes(ymin = min, lower = low, middle = med_weig, upper = high, ymax = max, fill=medianCol, x = pos), alpha=0.75, outlier.colour = NA, stat = "identity", show.legend = FALSE)+
     geom_hline(yintercept = 0, colour = "red")+
     labs(title = paste0(sample_name),
     subtitle = paste0("estimated gender: ", gender))
 
   if (estimate == TRUE) {
     gp_expr <- gp_expr +
-    geom_label(data = distinct(feat_tab_alt, chr, colour_chr, chr_alt), aes(x = 0.5, y = ylim[2], color = colour_chr, label = chr_alt), label.size = 2) +
-    scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "darkmagenta", "blue"))
-  }
+      geom_point(data = data.frame(x = c(0.5, 0.5), y = c(ylim[2], ylim[2]), point_col = c("low", "high"), chr = factor(c(1, 1), levels = c(1:22, "X"))), mapping = aes(x = x, y = y, color = point_col), shape = 0, size = 4, stroke = 2) +
+      geom_label(data = distinct(feat_tab_alt, chr, colour_chr, chr_alt), aes(x = 0.5, y = ylim[2], color = colour_chr, label = chr_alt), label.size = 2, show.legend = FALSE) +
+      scale_color_manual(limits = c("low", "high"), values=c("orangered", "black")) +
+      guides(color = guide_legend(
+        title = "Confidence of estimation"
+      ))
+    }
 
   gp_expr <- gp_expr +
     facet_grid(.~chr) +
     theme_bw() +
-    theme(legend.position = "none",
-          plot.title = element_text(hjust = 0.5),
-          plot.subtitle = element_text(hjust = 0.5),
+    theme(plot.title = element_text(hjust = 0.5, size = 15),
+          plot.subtitle = element_text(hjust = 0.5, size = 10),
           axis.title.x=element_blank(),
           axis.text.x = element_blank(),
-          axis.ticks = element_blank())
+          axis.title.y=element_text(size = 12),
+          axis.ticks = element_blank()) +
+    guides(size = FALSE)
 }
 
 ####plot snv density plots####
-plot_snv <- function(smpSNPdata, chrs, sample_name) {
+plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
+
+  browser()
 
   missedChr=c(1:22, "X")[table(smpSNPdata$chr) < 15]
   if(length(missedChr) > 0){
@@ -239,18 +246,34 @@ plot_snv <- function(smpSNPdata, chrs, sample_name) {
     snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05)
     peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
     gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") +
-      geom_density(aes(maf, color=peakCol)) +
+      geom_density(aes(maf, color=peakCol), show.legend = FALSE) +
       geom_text(data = peakdist_dat, aes(x, y, label = label), vjust=0)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
-      scale_color_identity()+
+      scale_color_identity(guide = guide_legend(override.aes = list(color = "white")))+
       scale_x_continuous(breaks = round(c(1/3, 2/3), 3), labels = c("1/3", "2/3"), minor_breaks = NULL, limits = c(0,1)) +
       scale_y_continuous(breaks = c(seq(from = 1, to = floor(yAxisMax)), yAxisMax*1.15), labels = c(seq(from = 1, to = floor(yAxisMax)), "peak dist."), limits = c(0, yAxisMax*1.2)) +
       facet_grid(.~chr, scales="free_y") +
       theme_bw() +
-      theme(axis.text.x = element_text(angle = 40, vjust = 0.5), axis.ticks = element_blank(),
-            strip.background = element_blank(), strip.text.x = element_blank(),
+      theme(axis.text.x = element_text(angle = 40, vjust = 0.5),
+            axis.ticks = element_blank(),
+            strip.background = element_blank(),
+            strip.text.x = element_blank(),
+            axis.title.y = element_text(size = 12),
+            axis.text.y = element_text(size = 7),
             plot.margin = unit(c(0,1,1,1), "lines")
-            )
+      )
+    if (estimate == TRUE) {
+      gp.maf <- gp.maf +
+        geom_point(data = data.frame(x = c(0.5, 0.5), y = c(0, 0), point_col = c("white", "white"), chr = factor(c(1, 1), levels = c(1:22, "X"))), mapping = aes(x = x, y = y, color = point_col), shape = 20, size = 5, alpha = 0) +
+        guides(color = guide_legend(
+          title = "Confidence of estimation"
+        )) +
+        theme(
+          legend.text = element_text(color = "white"),
+          legend.title = element_text(color = "white"),
+          legend.key = element_blank()
+        )
+    }
   }
 }
 
@@ -315,7 +338,7 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
 
     gg_expr_zoom <- gg_expr_zoom +
       geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1) +
-      scale_color_manual(limits = c("bad", "good", "very_good"), values=c("red", "darkmagenta", "blue")) +
+      scale_color_manual(limits = c("low", "high"), values=c("darkorange1", "black")) +
       if(nrow(p_alt) > 0) {
         geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1)
       }
@@ -355,7 +378,7 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
   } else {
     gg_snv_arm <- ggplot(data=smpSNP_arm) + xlab("Mutant allele frequency") + ylab("Density") + ylim(0, yAxisMax*1.2) +
       geom_density(aes(maf, color=peakCol)) +
-      geom_text(data = peakdist_dat, aes(x, y, label = paste0("peak dist. = ", label)), vjust=0, size = 5)+
+      geom_text(data = peakdist_dat, aes(x, y, label = paste0("peak dist. = ", label)), vjust=0, size = 6)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       scale_color_identity()+
       scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 2), minor_breaks = NULL, limits = c(0,1), labels = c("1/3", "1/2", "2/3")) +
@@ -508,8 +531,8 @@ metr_dipl <- function(data) {
 }
 
 ### Create colour coding for estimation values ####
-colour_code <- function(data) {
-  data_col <- data %>% mutate(colour_arm = factor(ifelse(alteration_prob < 0.75, "bad", ifelse(alteration_prob > 0.9, "very_good", "good")), levels = c("bad", "good", "very_good"))) %>% group_by(chr) %>% mutate(min_prob = min(alteration_prob)) %>% ungroup() %>% mutate(colour_chr = factor(ifelse(min_prob < 0.75, "bad", ifelse(min_prob > 0.9, "very_good", "good")), levels = c("bad", "good", "very_good"), ordered = TRUE)) %>%
+colour_code <- function(data, conf_tresh) {
+  data_col <- data %>% mutate(colour_arm = factor(ifelse(alteration_prob < conf_tresh, "low", "high"), levels = c("low", "high"))) %>% group_by(chr) %>% mutate(min_prob = min(alteration_prob)) %>% ungroup() %>% mutate(colour_chr = factor(ifelse(min_prob < conf_tresh, "low", "high"), levels = c("low", "high"), ordered = TRUE)) %>%
     select(-min_prob)
   return(data_col)
 }
