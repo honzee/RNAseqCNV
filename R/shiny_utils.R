@@ -230,8 +230,6 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
 ####plot snv density plots####
 plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
 
-  browser()
-
   missedChr=c(1:22, "X")[table(smpSNPdata$chr) < 15]
   if(length(missedChr) > 0){
     tmpSNPdata=data.frame(sampleID = sample_name, ID=paste0(missedChr, "-1"), maf=0.5, chr=factor(missedChr, levels = c(1:22, "X")), start=1,
