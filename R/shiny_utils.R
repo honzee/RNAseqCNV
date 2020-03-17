@@ -78,30 +78,59 @@ get_med <- function(count_norm, refDataExp) {
 }
 
 ####prepare snv files####
-prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs) {
+prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv_format = c("vcf", "custom")) {
   header <- c("chr", "start", "ref", 'var', 'end', 'qual', 'depth', 'refDp', 'varDp', 'mapQ', "maf")
 
   snv_file <- pull(sample_table, snv_path)[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
 
-  refSNP=c()
   smpSNP=list()
   print(paste("preparing MAF file:", sample_n) )
-  rnaData <- fread(snv_file)
-  if (ncol(rnaData) != 11 | all(sapply(rnaData, class) == c("character", "integer", "character", "character", "integer", "numeric", "integer", "integer", "integer", "numeric", "numeric")) != TRUE) {
-    stop(paste0("Incorrect ", snv_file, " file format"))
+
+  #prepare data from custom table
+  if (snv_format == "custom") {
+    #read the table
+    snv_table_pre <- fread(snv_file)
+
+    #check if all appropriate columns are present
+    cols <- colnames(snv_table_pre)
+    chr <- str_which(cols, "^CHR$|^chr$|^Chr$|^CHROM$|^chrom$|^Chrom$|^CHROMOSOME$|^chromosome$|^Chromosome$")
+    start <- str_which(cols, "^START$|^start$|^Start$|^POS$|^pos$|^Pos$")
+    depth <- str_which(cols, "^DEPTH$|^depth$|^Depth$|^DP$|^dp$|^Dp$")
+    maf <- str_which(cols, "^MAF$|^maf$|^Maf$|^HET$|^het$|^Het$")
+    if (length(c(chr, start, depth, maf)) != 4) {
+      smpSNP[[sample_n]] <- "Incorrect column name in a custom snv file."
+      return(smpSNP)
+    }
+    snv_table <- snv_table_pre[, .(chr, start, depth, maf)]
+    data.table::setnames(snv_table, colnames(snv_table), c("chr", "start", "depth", "maf"))
+
+    #Check some column parameters
+    if (is.numeric(snv_table[, start]) == FALSE | is.numeric(snv_table[, depth]) == FALSE | is.numeric(snv_table[, maf]) == FALSE) {
+      smpSNP[[sample_n]] <- "Incorrect type of a column in a custom file with snv information."
+      return(smpSNP)
+    }
+
+  } else if (snv_format == "vcf") {
+    snv_table <- vcf_to_snv(snv_file)
+    if(is.character(snv_table)) {
+      smpSNP[[sample_n]] <- snv_table
+      return(smpSNP)
+    }
   }
-  rnaData <- rnaData %>% select(1:11) %>% magrittr::set_colnames(header)
-  smpSNP[[sample_n]] <- rnaData %>% filter(chr %in% chrs, depth > minDepth ) %>%
+
+  smpSNP[[sample_n]] <- snv_table %>% filter(chr %in% chrs) %>%
     mutate(chr = factor(chr, levels=chrs), ID=paste0(chr,"-", start), sampleID=sample_n) %>% left_join(centr_ref, by = "chr") %>% mutate(arm = ifelse(start < cstart, "p", ifelse(start > cend, "q", "centr")))
+
   return(smpSNP)
 }
 
 
 ####filter SNVs of interest for samples###
-filter_snv <- function(one_smpSNP, keepSNP) {
+filter_snv <- function(one_smpSNP, keepSNP, minDepth) {
   smpSNPdata.tmp= one_smpSNP %>% dplyr::select(sampleID, ID, maf, chr, start, depth, arm) %>%  filter(
     data.table::inrange(maf, 0.05, 0.9),
+    depth > minDepth,
     ID %in% keepSNP) %>% filter(chr != "Y")
   return(smpSNPdata.tmp)
 }
@@ -287,7 +316,7 @@ arrange_plots <- function(gg_exp, gg_snv) {
 #### rescale centromeric region ####
 rescale_centr <- function(centr_ref, count_ns_final) {
   count_ns_range <- count_ns_final %>% group_by(chr) %>% summarise(chr_end = max(end)) %>% mutate(chr_start = 1)
-  centr_res <- centr_ref  %>% filter(chr != "Y") %>% left_join(count_ns_range, by = "chr") %>% mutate(p_mid = cstart/2, q_mid = cend + (chr_end - cend)/2)
+  centr_res <- centr_ref  %>% filter(chr != "Y") %>% mutate(chr = factor(chr, levels = c(1:22, "X"))) %>% left_join(count_ns_range, by = "chr") %>% mutate(p_mid = cstart/2, q_mid = cend + (chr_end - cend)/2)
   rescaled <- data.frame(cstartr = c(), cendr = c(), p_midr = c(), q_midr = c())
 
   for (i in 1:nrow(centr_res)) {
@@ -323,8 +352,8 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
     theme_bw() +
     theme(legend.position = "none",
           plot.title = element_text(hjust = 0.5, size = 20),
-          axis.text = element_text(size = 13),
-          axis.title = element_text(size = 14),
+          axis.text = element_text(size = 16),
+          axis.title = element_text(size = 17),
           axis.title.x = element_blank(),
           axis.text.x = element_blank(),
           axis.ticks = element_blank())
@@ -382,10 +411,10 @@ plot_snv_arm <- function(smpSNPdata_a, plot_arm, plot_chr, yAxisMax) {
       scale_x_continuous(breaks = round(c(1/3, 0.5, 2/3), 2), minor_breaks = NULL, limits = c(0,1), labels = c("1/3", "1/2", "2/3")) +
       ggtitle(paste0(plot_arm, " arm")) +
       theme_bw() +
-      theme(axis.text = element_text(size = 13), axis.ticks = element_blank(),
+      theme(axis.text = element_text(size = 16), axis.ticks = element_blank(),
             strip.background = element_blank(), strip.text.x = element_blank(),
             plot.margin = unit(c(0,1,1,1), "lines"), plot.title = element_text(hjust = 0.5, size = 20),
-            axis.title = element_text(size = 14)
+            axis.title = element_text(size = 17)
       )
   }
 
@@ -581,6 +610,9 @@ gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
   }
 
   alterations = paste0(c(gains_str, dels_str), collapse = ",")
+  if (alterations == "") {
+    alterations <- "none"
+  }
 
   kar_table <- data.frame(sample = sample_name,
                           gender = factor(gender, levels = c("female", "male")),
@@ -589,4 +621,53 @@ gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
                           alterations = alterations, stringsAsFactors = FALSE)
 
   return(kar_table)
+}
+
+#' Fucnction that converts vcf files to tabular input for CNV analysis
+vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
+
+  #read the vcf files
+  message("Reading in vcf file..")
+  vcf_data <- fread(vcf_file)
+  #check whether the input is in correct format
+  if (dim(vcf_data)[2] < 10) {
+    vcf_final <- "Incorrect vcf file format. Incorrect number of columns"
+    return(vcf_final)
+  }
+  if (!identical(colnames(vcf_data)[2:8], c("POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"))) {
+    vcf_final <- "Incorrect vcf file format."
+    return(vcf_final)
+  }
+  if (str_detect(vcf_data[1, INFO], "DP=[0-9]+") != TRUE) {
+    vcf_final <- "Incorrect vcf file format. No depth information in INFO column"
+    return(vcf_final)
+  }
+  if (str_detect(vcf_data[1, 9], "AD") != TRUE) {
+    vcf_final <- "Incorrect vcf file format. No allele depth (AD) in FORMAT column"
+    return(vcf_final)
+  }
+
+
+  vcf_data <- vcf_data[, 1:10]
+  data.table::setnames(x = vcf_data, old = colnames(vcf_data), new = c("chr", "start", "ID", "ref", "var", "qual", "FILTER", "INFO", "FORMAT", "INFO2"))
+
+  # Getting depth out of the INFO column
+  message("Extracting depth..")
+  vcf_data[, depth := as.numeric(sub("DP=", "", str_extract(INFO, "DP=[0-9]+")))]
+
+  #reference allele and alternative allele depths
+  message("Extracting reference allele and alternative allele depths..")
+  vcf_data[, REF_ALT_num := sapply(str_split(INFO2, ":"), function(x) x[2])]
+  #extract count for alternative allele
+  vcf_data[, varDp := as.numeric(sapply(str_split(REF_ALT_num, ","), function(x) x[2]))]
+  #mutant allele frequency
+  vcf_data[, maf := varDp/depth]
+
+  message("Needed information from vcf extracted")
+
+  #return needed columns
+  vcf_final <- vcf_data[, c("chr", "start", 'depth', "maf")]
+
+  message("Finished reading vcf")
+  return(vcf_final)
 }

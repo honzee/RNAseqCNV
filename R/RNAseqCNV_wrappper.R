@@ -25,7 +25,7 @@
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene
 #' @param weight_samp_prop proportion of samples to be kept according the their weight
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               model_alter_noSNV = model_noSNV, chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   #Check the config file
@@ -75,7 +75,12 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     sample_name <- as.character(sample_table[i, 1])
 
     #load SNP data
-    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chroms)
+    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chroms, snv_format = snv_format)
+
+   if (is.character(smpSNP[[1]])) {
+      message(smpSNP[[1]])
+      next()
+    }
 
     #calculate normalized count values
     count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
@@ -84,7 +89,7 @@ RNAseqCNV_wrapper <- function(config, metadata, adjust = TRUE, arm_lvl = TRUE, e
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
 
     #filter SNP data base on dpSNP database
-    smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keptSNP)
+    smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keptSNP, minDepth = minDepth)
 
     #analyze chromosome-level metrics (out-dated)
     smpSNPdata <- calc_chrom_lvl(smpSNPdata.tmp)

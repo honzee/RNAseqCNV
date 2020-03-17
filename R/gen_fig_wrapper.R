@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs, diploid_standard, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
 
     #Is any neccessary input missing?
@@ -40,7 +40,12 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           incProgress(amount = 0.15, detail = "Prepring SNV and count data")
 
           #load SNP data
-          smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, minDepth = minDepth, chrs = chrs)
+          smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chrs, snv_format = snv_format)
+
+          if (is.character(smpSNP[[1]])) {
+            showNotification(paste0(sample_name, ": ", smpSNP[[1]]), duration = NULL, id = "not_valid_snv_info", type = "message")
+            next()
+          }
 
           #calculate noemalized count values
           count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop)
@@ -51,7 +56,7 @@ gen_fig_wrapper <- function(config, metadata, avail, sample_table, to_analyse, a
           pickGeneDFall <- get_med(count_norm = count_norm, refData = refData)
 
           #filter SNP data base on dpSNP database
-          smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keepSNP)
+          smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keepSNP, minDepth = minDepth)
 
           #analyze chromosome-level metrics
           smpSNPdata <- calc_chrom_lvl(smpSNPdata.tmp)
