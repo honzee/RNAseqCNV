@@ -132,14 +132,14 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
         bind_rows(feat_tab_alt)
     }
 
-    feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.82) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
+    feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.85) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
     #estimate karyotype
     kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
     est_table <- rbind(est_table, kar_list)
-    write.table(x = est_table, file = file.path(out_dir, "estimation_table.tsv"), sep = "\t", quote = FALSE)
-    write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t", quote = FALSE)
+    write.table(x = est_table, file = file.path(out_dir, "estimation_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
+    write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 
 
     #adjust for diploid level

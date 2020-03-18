@@ -104,7 +104,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
                                                                                            alteration_prob = apply(randomForest:::predict.randomForest(model_noSNV, ., type = "prob"), 1, max)) %>%
                 bind_rows(feat_tab_alt)
             }
-            feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.82) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
+            feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.85) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
           #estimate karyotype
           incProgress(amount = 0.05, detail = "Estimating karyotype")
@@ -112,8 +112,8 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
             kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
 
             est_table <- rbind(est_table, kar_list)
-            write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t", quote = FALSE)
-            write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE)
+            write.table(x = est_table, file = paste0(config["out_dir"], "/", "estimation_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
+            write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = paste0(config["out_dir"], "/", "manual_an_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 
           #adjust for diploid level
           if (adjust == TRUE) {

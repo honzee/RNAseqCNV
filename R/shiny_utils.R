@@ -79,7 +79,6 @@ get_med <- function(count_norm, refDataExp) {
 
 ####prepare snv files####
 prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv_format = c("vcf", "custom")) {
-  header <- c("chr", "start", "ref", 'var', 'end', 'qual', 'depth', 'refDp', 'varDp', 'mapQ', "maf")
 
   snv_file <- pull(sample_table, snv_path)[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
@@ -224,6 +223,7 @@ filter_expr <- function(count_ns_final, cutoff = 0.6) {
 
 ####plot expression boxplot and point plot####
 plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
+  browser()
   gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized expression") +
     scale_fill_identity()+
     geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32, show.legend = FALSE)+
@@ -233,14 +233,13 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
     geom_hline(yintercept = 0, colour = "red")+
     labs(title = paste0(sample_name),
     subtitle = paste0("estimated gender: ", gender))
-
   if (estimate == TRUE) {
     gp_expr <- gp_expr +
       geom_point(data = data.frame(x = c(0.5, 0.5), y = c(ylim[2], ylim[2]), point_col = c("low", "high"), chr = factor(c(1, 1), levels = c(1:22, "X"))), mapping = aes(x = x, y = y, color = point_col), shape = 0, size = 4, stroke = 2) +
       geom_label(data = distinct(feat_tab_alt, chr, colour_chr, chr_alt), aes(x = 0.5, y = ylim[2], color = colour_chr, label = chr_alt), label.size = 2, show.legend = FALSE) +
       scale_color_manual(limits = c("low", "high"), values=c("orangered", "black")) +
       guides(color = guide_legend(
-        title = "Confidence of estimation"
+        title = "Quality"
       ))
     }
 
@@ -252,7 +251,10 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
           axis.title.x=element_blank(),
           axis.text.x = element_blank(),
           axis.title.y=element_text(size = 12),
-          axis.ticks = element_blank()) +
+          axis.ticks = element_blank(),
+          legend.justification = "top",
+          legend.text = element_text(size = 15),
+          legend.title = element_text(size = 17)) +
     guides(size = FALSE)
 }
 
@@ -290,15 +292,17 @@ plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
             plot.margin = unit(c(0,1,1,1), "lines")
       )
     if (estimate == TRUE) {
+      #need to add identical legend as for the expression in order for the graphs to align correctly with ggarrange
       gp.maf <- gp.maf +
         geom_point(data = data.frame(x = c(0.5, 0.5), y = c(0, 0), point_col = c("white", "white"), chr = factor(c(1, 1), levels = c(1:22, "X"))), mapping = aes(x = x, y = y, color = point_col), shape = 20, size = 5, alpha = 0) +
         guides(color = guide_legend(
-          title = "Confidence of estimation"
+          title = "Quality"
         )) +
         theme(
-          legend.text = element_text(color = "white"),
-          legend.title = element_text(color = "white"),
-          legend.key = element_blank()
+          legend.text = element_text(color = "white", size = 15),
+          legend.title = element_text(color = "white", size = 17),
+          legend.key = element_blank(),
+          legend.justification = "top"
         )
     }
   }
