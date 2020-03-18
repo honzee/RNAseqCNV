@@ -85,7 +85,7 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv
   sample_n <- pull(sample_table, 1)[sample_num]
 
   smpSNP=list()
-  print(paste("preparing MAF file:", sample_n) )
+  print(paste("Preparing file with snv information for:", sample_n))
 
   #prepare data from custom table
   if (snv_format == "custom") {
@@ -365,7 +365,7 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
 
     gg_expr_zoom <- gg_expr_zoom +
       geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1) +
-      scale_color_manual(limits = c("low", "high"), values=c("darkorange1", "black")) +
+      scale_color_manual(limits = c("low", "high"), values=c("orangered", "black")) +
       if(nrow(p_alt) > 0) {
         geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1)
       }
@@ -580,23 +580,6 @@ gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
   #chromosome number
   chrom_n = 46 + length(gains) - length(dels)
 
-  #call type
-  type <- if (chrom_n == 46) {
-    "diploid"
-  } else if (chrom_n >= 51) {
-    "high hyperdiploid"
-  } else if (chrom_n >= 47 & chrom_n <= 50) {
-    "low hyperdiploid"
-  } else if (chrom_n <= 39 & chrom_n >= 32) {
-    "low hypodiploid"
-  } else if (chrom_n <= 31 & chrom_n >= 24) {
-    "near haploid"
-  } else if (chrom_n <= 43 & chrom_n >= 40) {
-    "high hypodiploid"
-  } else if (chrom_n <= 45 & chrom_n >= 44) {
-    "near diploid"
-  }
-
   if(length(dels) > 0) {
     dels_str <- dels %>% paste0(., "-")
   } else {
@@ -617,7 +600,6 @@ gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
   kar_table <- data.frame(sample = sample_name,
                           gender = factor(gender, levels = c("female", "male")),
                           chrom_n = chrom_n,
-                          type = factor(type, levels = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")),
                           alterations = alterations, stringsAsFactors = FALSE)
 
   return(kar_table)

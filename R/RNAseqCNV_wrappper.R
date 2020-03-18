@@ -66,7 +66,6 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
   est_table <- data.frame(sample = character(),
                           gender = factor(levels = c("female", "male")),
                           chrom_n = integer(),
-                          type = factor(levels = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")),
                           alterations = character(), stringsAsFactors = FALSE)
 
   #Run the analysis for every sample in the table
@@ -124,7 +123,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
       metr_dipl()
 
     #model alteration on chromosome arms an in case of problematic SNV graph, use model without this information included
-
+    print(paste0("Estimating chromosome arm CNV",": ", sample_name))
     feat_tab_alt <- feat_tab_dipl %>% filter(chr_status != "unknown") %>% mutate(alteration = as.character(randomForest:::predict.randomForest(model_alter, ., type = "class")),
                                             alteration_prob = apply(randomForest:::predict.randomForest(model_alter, ., type = "prob"), 1, max))
     if (any(feat_tab_dipl$chr_status == "unknown")) {
@@ -170,6 +169,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
 
         centr_res <- rescale_centr(centr_ref, count_ns_final)
 
+        print(paste0("Plotting arm-level figures: ", sample_name))
 
         #plot every chromosome
         for (i in chr_to_plot) {
@@ -196,8 +196,11 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
 
       fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 
+      print(paste0("Plotting main figure: ", sample_name))
+
       ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10, dpi = 200)
 
+      print(paste0("Analysis for sample: ", sample_name, " finished"))
   }
 }
 

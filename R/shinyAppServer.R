@@ -380,16 +380,6 @@ shinyAppServer <- function(input, output, session) {
       sel <- cur_sel
     }
 
-    #update selectinput
-    updateSelectInput(session, "sel_sample", choices = fig_sam(), selected = sel)
-
-    #update type
-    type <- react_val$man_table$type[react_val$man_table$sample == sel]
-    output$type_select <- renderUI({
-      types = c("diploid", "high hyperdiploid", "low hyperdiploid", "low hypodiploid", "near haploid", "high hypodiploid", "near diploid")
-      selectInput(inputId = "type_select", choices = types, selected = type, label = "Select subtype")
-    })
-
     #update gender
     gender <- react_val$man_table$gender[react_val$man_table$sample == sel]
     output$gender_select <- renderUI({
@@ -480,7 +470,6 @@ shinyAppServer <- function(input, output, session) {
 
     #change values from text input
     sam_ind <- which(man_an$sample == input$sel_sample)
-    man_an[sam_ind, "type"] <- input$type_select
     man_an[sam_ind, "gender"] <- input$gender_select
     man_an[sam_ind, "chrom_n"] <- input$chromn_text
     man_an[sam_ind, "alterations"] <- input$alt_text
@@ -493,25 +482,22 @@ shinyAppServer <- function(input, output, session) {
   })
 
   #keep track of which files have and havn't been checked and of unsaved changes
-  observeEvent(c(input$type_select,
-                 input$gender_select,
+  observeEvent(c(input$gender_select,
                  input$chromn_text,
                  input$alt_text,
                  input$comments_text,
                  input$save_changes
   ), {
     #do not run the code if input values are null
-    if (is.null(input$type_select) |
-        is.null(input$gender_select) |
+    if (is.null(input$gender_select) |
         is.null(input$chromn_text) |
         is.null(input$alt_text) |
         is.null(input$comments_text)
     ) {
       return(NULL)
     } else {
-      #check whether any text input changed
-      if(input$type_select != as.character(react_val$man_table$type[react_val$man_table$sample == input$sel_sample]) |
-         input$gender_select != as.character(react_val$man_table$gender[react_val$man_table$sample == input$sel_sample]) |
+      #check whetter any text input changed
+      if(input$gender_select != as.character(react_val$man_table$gender[react_val$man_table$sample == input$sel_sample]) |
          input$chromn_text != as.character(react_val$man_table$chrom_n[react_val$man_table$sample == input$sel_sample]) |
          input$alt_text != as.character(react_val$man_table$alterations[react_val$man_table$sample == input$sel_sample]) |
          input$comments_text != as.character(react_val$man_table$comments[react_val$man_table$sample == input$sel_sample])
@@ -592,9 +578,6 @@ shinyAppServer <- function(input, output, session) {
 
   observeEvent(input$default,{
 
-    #update type
-    def_type <- react_val$def_table$type[react_val$def_table$sample == input$sel_sample]
-    updateTextInput(session, inputId = "type_select", value = def_type)
     #update gender
     def_gender <- react_val$def_table$gender[react_val$def_table$sample == input$sel_sample]
     updateTextInput(session, inputId = "gender_select", value = def_gender)
