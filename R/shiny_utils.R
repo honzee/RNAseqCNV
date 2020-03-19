@@ -571,46 +571,35 @@ colour_code <- function(data, conf_tresh) {
 ### Generate report for sample ###
 gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
 
-  #extract only the chromosomes which have only one call
-  alt_table <- feat_tab_alt %>% distinct(chr, alteration, colour_chr) %>% group_by(chr) %>% mutate(alt_types = length(unique(alteration)), mark = ifelse(colour_chr == "high", "", "?")) %>% filter(alt_types == 1)
+  ##extract only the chromosomes which have only one call and have high quality
+  tab_mod <- feat_tab_alt %>% select(chr, arm, alteration, colour_arm) %>% group_by(chr) %>% mutate(alt_types = length(unique(alteration)), qual_types = length(unique(colour_arm))) %>% ungroup()
 
-  #gain vector
-  single_gain = alt_table$chr[alt_table$alteration == 1]
-  double_gain = alt_table$chr[alt_table$alteration == 2] %>% rep(2)
-  gains_num = c(single_gain, double_gain)
-  gains_order = order(c(single_gain, double_gain))
+  # whole chromosome changes
+  alt_chr_whole <- tab_mod %>% filter(alt_types == 1 & qual_types == 1 & (colour_arm != "high" | alteration != 0)) %>%
+    mutate(alt_sign = ifelse(alteration %in% c(1, 2), "+", ifelse(alteration == -1, "-", "")), qual_sign = ifelse(colour_arm == "high", "", "?"), alt_str = paste0(qual_sign, chr, alt_sign)) %>%
+    distinct(chr, alt_str, alteration)
+  double_chr_whole <- alt_chr_whole %>% filter(alteration == 2)
+  alt_chr_whole_fin <- alt_chr_whole %>% bind_rows(double_chr_whole) %>% arrange(chr)
 
-  #del vector
-  dels_num = alt_table$chr[alt_table$alteration == -1]
+  # arm only changes
+  alt_arm <- tab_mod %>% filter((alt_types == 2 | qual_types == 2) & (colour_arm != "high" | alteration != 0)) %>%
+    mutate(alt_sign = ifelse(alteration %in% c(1, 2), "+", ifelse(alteration == -1, "-", "")), qual_sign = ifelse(colour_arm == "high", "", "?"), alt_str = paste0(qual_sign, chr, arm, alt_sign)) %>%
+    distinct(chr, alt_str, alteration, arm)
+  double_arm <- alt_arm %>% filter(alteration == 2)
+  alt_arm_fin <- alt_arm %>% bind_rows(double_arm) %>% arrange(chr, arm) %>% select(-arm)
+
+  #fuse the tables
+  alterations <- bind_rows(alt_chr_whole_fin, alt_arm_fin) %>% arrange(chr) %>% pull(alt_str) %>% paste0(collapse = ", ")
 
   #chromosome number
-  chrom_n = 46 + length(gains_num) - length(dels_num)
+  chrom_diff <- tab_mod %>% filter(alt_types == 1, qual_types == 1, colour_arm == "high") %>% distinct(chr, alteration) %>% pull(alteration) %>% as.numeric(.) %>% sum(.)
+  chrom_n = 46 + chrom_diff
 
-  #low confidence marker
-  single_gain_conf <- alt_table$mark[alt_table$alteration == 1]
-  double_gain_conf = alt_table$mark[alt_table$alteration == 2]
-  dels_conf = alt_table$mark[alt_table$alteration == -1]
-
-  #final deletion and gain string with confidence markers
-  gains <- c(paste0(single_gain_conf, single_gain), paste0(double_gain_conf, double_gain))[gains_order]
-  dels <- paste0(dels_conf, dels_num)
-
-  if(length(dels) > 0) {
-    dels_str <- dels %>% paste0(., "-")
-  } else {
-    dels_str <- c()
-  }
-
-  if(length(gains) > 0) {
-    gains_str <- gains %>% paste0(., "+")
-  } else {
-    gains_str <- c()
-  }
-
-  alterations = paste0(c(gains_str, dels_str), collapse = ",")
+  #fill in empty alteration vector
   if (alterations == "") {
     alterations <- "none"
   }
+
 
   kar_table <- data.frame(sample = sample_name,
                           gender = factor(gender, levels = c("female", "male")),

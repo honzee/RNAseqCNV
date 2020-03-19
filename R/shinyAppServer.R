@@ -134,7 +134,7 @@ shinyAppServer <- function(input, output, session) {
 
     figures <- list(chr_figs = chr_figs, main_fig = main_fig)
 
-    def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+    def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
     react_val$man_table <- def_table
     react_val$def_table <- def_table
     react_val$check <- TRUE
@@ -193,7 +193,7 @@ shinyAppServer <- function(input, output, session) {
                         refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs,
                         diploid_standard, scaleCols, dpRatioChrEdge)
 
-        def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+        def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
         react_val$man_table <- def_table
         react_val$def_table <- def_table
         react_val$check <- TRUE
@@ -219,11 +219,10 @@ shinyAppServer <- function(input, output, session) {
 
   #read default estimation table in case config file is changed
   observeEvent(react_val$config, {
-
     table_exists <- file.exists(paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_def <- read.table(file = paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+      est_def <- read.table(file = paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
       est_def <- cbind(est_def, status = "not checked", comments = "none")
 
       react_val$def_table <- est_def
@@ -239,7 +238,7 @@ shinyAppServer <- function(input, output, session) {
     table_exists <- file.exists(paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"))
 
     if (table_exists == TRUE) {
-      est_man <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+      est_man <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
       react_val$man_table <- est_man
 
@@ -277,7 +276,6 @@ shinyAppServer <- function(input, output, session) {
     figures <- fig_sam()
 
     #the check is completed only if the samples in the given directory match with samples in estimation tables and and samples from the input
-
       if (all(figures %in% react_val$def_table$sample) & all(figures %in% react_val$man_table$sample) & all(figures %in% pull(sample_table(), 1))) {
         react_val$check <- TRUE
       } else {
@@ -466,7 +464,7 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$save_changes, {
 
     #read in table for manual analysis
-    man_an <- read.table(paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+    man_an <- read.table(paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
 
     #change values from text input
     sam_ind <- which(man_an$sample == input$sel_sample)
@@ -654,7 +652,7 @@ shinyAppServer <- function(input, output, session) {
 
   #parse the alt_text text input and check whether the format is acceptable
   acceptable <- eventReactive(input$alt_text, {
-    if (any(str_detect(string = alt_vec(), pattern = "^([1-9]|^1[0-9]|^2[0-2]|^X){1}[p-q]{0,1}(\\+|-)$|^none$") == FALSE)) {
+    if (any(str_detect(string = alt_vec(), pattern = "^(\\?){0,1}([1-9]|1[0-9]|2[0-2]|X){1}[p-q]{0,1}(\\+|-)$|^none$") == FALSE)) {
       return(FALSE)
     } else {
       return(TRUE)
@@ -709,7 +707,7 @@ shinyAppServer <- function(input, output, session) {
                           refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs,
                           diploid_standard, scaleCols, dpRatioChrEdge)
 
-          def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t")
+          def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
           react_val$man_table <- def_table
           react_val$def_table <- def_table
           react_val$check <- TRUE
