@@ -93,15 +93,16 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv
 
     #check if all appropriate columns are present
     cols <- colnames(snv_table_pre)
-    chr <- str_which(cols, "^CHR$|^chr$|^Chr$|^CHROM$|^chrom$|^Chrom$|^CHROMOSOME$|^chromosome$|^Chromosome$")
+    chr <- str_which(cols, "^#Chromosome$|#CHROM$|^CHR$|^chr$|^Chr$|^CHROM$|^chrom$|^Chrom$|^CHROMOSOME$|^chromosome$|^Chromosome$")
     start <- str_which(cols, "^START$|^start$|^Start$|^POS$|^pos$|^Pos$")
     depth <- str_which(cols, "^DEPTH$|^depth$|^Depth$|^DP$|^dp$|^Dp$")
     maf <- str_which(cols, "^MAF$|^maf$|^Maf$|^HET$|^het$|^Het$")
-    if (length(c(chr, start, depth, maf)) != 4) {
+    to_keep <- as.numeric(c(chr, start, depth, maf))
+    if (length(to_keep) != 4) {
       smpSNP[[sample_n]] <- "Incorrect column name in a custom snv file."
       return(smpSNP)
     }
-    snv_table <- snv_table_pre[, .(chr, start, depth, maf)]
+    snv_table <- snv_table_pre[, to_keep, with = FALSE]
     data.table::setnames(snv_table, colnames(snv_table), c("chr", "start", "depth", "maf"))
 
     #Check some column parameters
@@ -223,7 +224,6 @@ filter_expr <- function(count_ns_final, cutoff = 0.6) {
 
 ####plot expression boxplot and point plot####
 plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
-  browser()
   gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized expression") +
     scale_fill_identity()+
     geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32, show.legend = FALSE)+
@@ -572,17 +572,28 @@ colour_code <- function(data, conf_tresh) {
 gen_kar_list <- function(feat_tab_alt, sample_name, gender) {
 
   #extract only the chromosomes which have only one call
-  alt_table <- feat_tab_alt %>% distinct(chr, alteration) %>% group_by(chr) %>% mutate(alt_types = length(unique(alteration))) %>% filter(alt_types == 1)
+  alt_table <- feat_tab_alt %>% distinct(chr, alteration, colour_chr) %>% group_by(chr) %>% mutate(alt_types = length(unique(alteration)), mark = ifelse(colour_chr == "high", "", "?")) %>% filter(alt_types == 1)
 
   #gain vector
   single_gain = alt_table$chr[alt_table$alteration == 1]
-  gains = alt_table$chr[alt_table$alteration == 2] %>% rep(2) %>% c(single_gain) %>% sort()
+  double_gain = alt_table$chr[alt_table$alteration == 2] %>% rep(2)
+  gains_num = c(single_gain, double_gain)
+  gains_order = order(c(single_gain, double_gain))
 
   #del vector
-  dels = alt_table$chr[alt_table$alteration == -1]
+  dels_num = alt_table$chr[alt_table$alteration == -1]
 
   #chromosome number
-  chrom_n = 46 + length(gains) - length(dels)
+  chrom_n = 46 + length(gains_num) - length(dels_num)
+
+  #low confidence marker
+  single_gain_conf <- alt_table$mark[alt_table$alteration == 1]
+  double_gain_conf = alt_table$mark[alt_table$alteration == 2]
+  dels_conf = alt_table$mark[alt_table$alteration == -1]
+
+  #final deletion and gain string with confidence markers
+  gains <- c(paste0(single_gain_conf, single_gain), paste0(double_gain_conf, double_gain))[gains_order]
+  dels <- paste0(dels_conf, dels_num)
 
   if(length(dels) > 0) {
     dels_str <- dels %>% paste0(., "-")
