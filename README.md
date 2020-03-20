@@ -46,11 +46,11 @@ snv_dir = "/Path/to/dir/with/vcf_files"
 ##### Metadata
 Metadata parameter expects a path to a file with comma/tab/space separated table with three columns. The first column contains sample names, the second countains count file names and the third contains vcf/custom table file names. **The table cannot have a header and the order of these columns must be kept as in the example below:**
 
-[]()|  | 
---- | --- | ---
-SJALL014946_D1 | SJALL014946_D1.HTSeq | SJALL014946_D1.vcf
-SJALL014949_D1 | SJALL014949_D1.HTSeq | SJALL014949_D1.vcf
-SJALL014950_D1 | SJALL014950_D1.HTSeq | SJALL014950_D1.vcf
+|[]()|||
+|--- | --- | ---|
+|SJALL014946_D1 | SJALL014946_D1.HTSeq | SJALL014946_D1.vcf|
+|SJALL014949_D1 | SJALL014949_D1.HTSeq | SJALL014949_D1.vcf|
+|SJALL014950_D1 | SJALL014950_D1.HTSeq | SJALL014950_D1.vcf|
 
 ##### Input file formats:
 
@@ -102,7 +102,7 @@ The bottom panel shows the density graphs of MAF for each chromosome. It is impo
 
 ##### Arm-level figures
 
-![arm level figure](./README/arm_level.png)
+![arm level figure 1](./README/arm_level_1.png)
 
 Users have the option to generate close up figures of each chromosome with either
 
@@ -114,10 +114,77 @@ or ticking the appropriate box in the shiny app interface.
 The large panel in the middle is a close up of the main figure, specific for one chromosome. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. On both sides of this panel, there are two MAF density graphs, one for p arm and one for q arm. For chromosomes without p arm there is only one side panel on the left.
 
 ##### Estimation table
-The estimated gender, alterations and chromosome number are saved in a table in the output directory.
+The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv is meant to store the output of RNAseqCNV models. The manual_an_table.tsv stores the corrections made by users inside the shiny app.
 
-| sample       | gender | chrom_n | alterations                                                                                 |
-|--------------|--------|---------|---------------------------------------------------------------------------------------------|
-| SJHYPER141_D | male   | 59      | 1q+, 4+, 5+, 6+, 7+, ?8+, ?8+, 10+, 12+, 14+, 14+, ?16q, 17+, ?18+, ?18+, 21+, 21+, 22+, X+ |
- 
+- sample: sample name as in the metadata table
+- gender: gender as estimated with respect to the expression of genes on chromosome Y
+- chrom_n: final number of whole chromosomes in the samples (only high quality, whole chromosome CNVs are taken into account)
+- alterations: alterations as estimated by random forest model. Gain is marked by a "+" sign, loss by "-" sign, double gain (and higher) by two identical alterations with "+" sign. P and q letters specify the arm, where the CNV occurs. ? signifies lower confidence of the classification judged by the percentage of trees that voted for this alteration, these calls should be checked manually by the user.
 
+| sample         | gender | chrom_n | alterations                                                                                 |
+|----------------|--------|---------|---------------------------------------------------------------------------------------------|
+| SJHYPER141_D   | male   | 59      | 1q+, 4+, 5+, 6+, 7+, ?8+, ?8+, 10+, 12+, 14+, 14+, ?16q, 17+, ?18+, ?18+, 21+, 21+, 22+, X+ |
+| SJALL015971_D1 | female | 28      | 1-, 2-, 3-, 4-, 5-, 7-, 8-, 9-, 11-, 12-, 13-, 14-, 15-, 16-, 17-, 19-, 20-, 22-            |
+| SJALL049672_D1 | male   | 34      | 2-, 3-, 4-, 5-, 7-, 9-, 13-, 15-, 16-, 17-, 20-, ?21, 22-                                   |
+| SJALL015927_D1 | female | 52      | ?6p+, 6q+, 10+, 14+, 17q+, 18+, 21+, 21+, X+                                                |
+
+#### Basic function parameters
+
+Explanation of basic wrapper function parameters and shiny app options
+
+##### Arm-level figures
+The plotting of arm-level figures increases the per-sample runtime significantly. You can disable the this by:
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = FALSE)
+```
+or uncheck the appropriate box in the shiny app interface.
+
+##### Estimation labels
+The estimation labels can be removed from the figures with:
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", estimate_lab = FALSE)
+```
+or by unchecking the appropriate box in the shiny app interface.
+
+##### Diploid adjustement
+Some samples may include high proportion of chromosomes with CNVs, such as the one below:
+
+![Figure with high number of CNVs without adjustment](./README/near_hap_nonadj.png)
+
+With regard to the relative nature of RNA-seq data, in such samples the normalized expression of stably expressed genes on diploid chromosomes will not be centered around zero. To address this issue, the package includes a random forest model, which classifies chromosomes as either diploid or non-diploid. Based on that information the figure is centered in a way that the chromosomes, which are estimated as diploid, are centered around zero:
+
+![Figure with high number of CNVs with adjustment](./README/near_hap_adj.png)
+
+This functionality is by default turned on. To disable it:
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", adjust = FALSE)
+```
+or uncheck the appropriate box in the shiny app interface.
+
+### Output Interpretation example
+
+Both panels of the main figure are important for discerning large-scale CNVs. By combining the expression level information and MAF density graphs it is possible to estimate CNVs with higher accuracy. The list below represents only a few basic patterns of CNVs and the results will largely depend on the type of sample the user will be working with.
+
+The figure below will serve as an example for result interpretation.
+
+[main figure 2](./README/main_fig_2.png)
+
+- diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The expression should be centered around zero (especially if diploid level adjustment was performed). The density graphs have a clear, high peak around 0.5 as would be expected with two chromosomes with two different alleles. SNVs with MAF outside the range 0.05 to 0.9 are filtered since these are mostly unifnormative.
+
+- copy neutral loss of heterozygozity: 9. The expression level is roughly on the level of other diploid chromosomes, which would suggest two copies, however, after inspection of MAF density graph we can see, that this is not the whole story. The shape of the density graph would suggest that there is only on chromosome copy, since the peaks are so wide apart. This pattern is consistent with LOH.
+
+- single gain: 6, 10, 14, 18. The expression is significantly higher than for diploid chromosomes. At the same time, the MAF density graph suggests ratio of alleles 2:1/1:2, which is typical for single gain.
+
+- double gain: 21. The expression is usually even higher than in chromosomes with single gain. However, for double gains, the MAF graphs can have two patterns according to the ratio of alleles in the sample (3:1, 2:2). In this case the peak is centered around 0.5 since the two additional copies come from different chromosomes (one maternal, one paternal).
+
+- chromosome X: Estimation of CNVs on chromosome X is more problematic, since due to X inactivation in women MAF graphs are usually uninformative. However, we can at least roughly approximate whether a gain or loss of X chromosome has occured by the expression level. In this case the higher expression suggests a gain of at least one copy.
+
+- partial gain/loss: The expression level level of partial gain/deletion is somewhere in between the diploid chromosomes and chromosomes with whole chromosomal change. The MAF density graph is distorted, but not in a typical pattern. Partial changes are marked as "ab" in the main figure which can lead us to further examination of this chromosome in the arm-level figure:
+
+![arm level figure 2](./README/arm_level_2.png)
+
+In this case, it is clear, that there is at least partial gain on q arm of chromosome 17.
+
+![Figure with high number of deletions](./README/near_hap_adj.png)
+
+- deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The deletions have significantly lower expression in comparison to diploid chromosomes. Also the MAF density graph suggests, that there is only a single allele. However, the deletion of chromosome 17 is not complete since there is still small but visible peak around 0.5.

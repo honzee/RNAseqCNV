@@ -382,11 +382,11 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
 
 
 ####calculate per chromosome max of y axis for arm level MAF graphs
-get_yAxisMax <- function(smpSNPdata, plot_chr) {
+get_yAxisMax_arm <- function(smpSNPdata_arm, plot_chr) {
 
-  smpSNP_chr <- smpSNPdata %>% filter(chr == plot_chr)
-  yAxisMax <- smpSNP_chr %>% select(snvNum, peak_max, peakdist) %>% unique() %>% .$peak_max %>% max()
-  return(yAxisMax)
+  smpSNP_arm_chr <- smpSNPdata_arm %>% filter(chr == plot_chr)
+  yAxisMax_arm <- smpSNP_arm_chr %>% distinct(arm, peak_max) %>% summarise(y_max = max(peak_max)) %>% pull(y_max)
+  return(yAxisMax_arm)
 
 }
 

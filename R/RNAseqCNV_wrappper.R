@@ -1,29 +1,30 @@
 #' RNAseqCNV_wrapper
 #'
-#' Wrapper for generating figures for analysis and preview figure
+#' Wrapper for generating figures and tables for CNV estimation from RNA-seq
 #'
-#' @param config R script assigning variables needed for the analysis
-#' @param metadata path to a metadata table with three columns. First colum represents sample names, second file names of count files, third file names of snv files.
-#' @param adjust logical value, determines, whether the diploid boxplots should be centered around zero on y axis
-#' @param arm_lvl logical value, determines, wheter arm_lvl figures should be printed (increases run-time significantly)
-#' @param estimate_lab logical value, determines, whether CNV estimation should be plotted in the final figure
-#' @param referData table, reference data for ensamble name annotation
-#' @param keptSNP vector of SNPs to keep for the analysis
-#' @param par_region table with pseudoautosomal regions, in order for these regions to be fitlered out
-#' @param centr_refer table with centromeric locations per chromosome
-#' @param weight_tab table with per-gene weight for adjusting the importance of each gene in calling CNA
-#' @param model_gend model for estimating gender based on expression of certain genes on chromosome Y
-#' @param model_dip model for estimating whether chromosome arm is diploid
-#' @param model_alter model for estimating the CNV on chromosome arm
-#' @param chroms vector of chromosomes to be analyzed
-#' @param base_matrix matrix with rows being gene expression and columns DIPLOID samples. This matrix is used as a diploid reference.
-#' @param base_column column names for base_matrix parameter
-#' @param scale_cols colour scaling for box plot
-#' @param dpRationChromEdge table with chromosome start and end base positions
-#' @param minDepth minimal depth of of SNV to be kept
+#' @param config R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
+#' (either vcf or custom tabular data), out_dir - path to an output directory. More detailed description can be found in the package README file.
+#' @param metadata path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
+#'  More information is included in the package README file.
+#' @param adjust logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.
+#' @param arm_lvl logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.
+#' @param estimate_lab logical value, If TRUE, CNV estimation labels will be included in the final figure.
+#' @param referData table, reference data for gene annotation with ensamble ids
+#' @param keptSNP vector of realiable SNPs to keep for the MAF graphs
+#' @param par_region table with pseudoautosomal regions. These regions will be filtered out.
+#' @param centr_refer table with chromosomal centromeric locations.
+#' @param weight_tab table with per-gene weight for calculating weighted quantiles for the boxplots in the main figure.
+#' @param model_gend random forest model for estimating gender based on the expression of certain genes on chromosome Y.
+#' @param model_dip random forest model for estimating whether chromosome arm is diploid.
+#' @param model_alter random forest model for estimating the CNVs on chromosome arm.
+#' @param chroms vector of chromosomes to be analyzed.
+#' @param diploid_standard table with 50 reference diploid samples for normalizing the data.
+#' @param scale_cols colour scaling for box plots according to the median of a boxplot.
+#' @param dpRationChromEdge table with chromosome start and end base positions.
+#' @param minDepth minimal depth of of SNV to be kept.
 #' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt
-#' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene
-#' @param weight_samp_prop proportion of samples to be kept according the their weight
+#' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from diploid_standard parameter) and analyzed sample.
+#' @param weight_samp_prop proportion of samples with highest weight to be kept.
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               model_alter_noSNV = model_noSNV, chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
@@ -49,7 +50,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
   #Create sample table
   sample_table = metadata_tab %>% mutate(count_path = file.path(count_dir, pull(metadata_tab, 2)), snv_path = file.path(snv_dir, pull(metadata_tab, 3)))
 
-  #check files
+  #check whether any of the files is missing
   count_check <- file.exists(sample_table$count_path)
   snv_check <- file.exists(sample_table$snv_path)
 
@@ -76,15 +77,16 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     #load SNP data
     smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chroms, snv_format = snv_format)
 
-   if (is.character(smpSNP[[1]])) {
+    # if SNV data format was incorrect print out a message and skip this sample
+    if (is.character(smpSNP[[1]])) {
       message(smpSNP[[1]])
       next()
     }
 
-    #calculate normalized count values
+    #calculate normalized count values with DESeq2 normalization method
     count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
 
-    #calculate medians for analyzed genes
+    #calculate median gene expression across diploid reference and analyzed sample
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
 
     #filter SNP data base on dpSNP database
@@ -142,17 +144,16 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
 
 
-    #adjust for diploid level
+    #adjust the gene expression according to the estimation of which chromosomes are diploid
     if (adjust == TRUE) {
       count_ns <-  adjust_dipl(feat_tab_alt, count_ns)
     }
 
-    #calculate box plots for plotting
+    #calculate box plots
     box_wdt <- get_box_wdt(count_ns = count_ns, chrs = chroms, scaleCols = scale_cols)
 
     #adjust y axis limits
     ylim <- adjust_ylim(box_wdt = box_wdt, ylim = c(-0.4, 0.4))
-
 
     count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChromEdge, ylim = ylim, chrs = chroms)
 
@@ -176,7 +177,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
 
           gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate_lab, feat_tab_alt = feat_tab_alt)
 
-          yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
+          yAxisMax_arm = get_yAxisMax_arm(smpSNPdata = smpSNPdata_a_2, plot_chr = i)
 
           gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
 

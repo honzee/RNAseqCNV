@@ -158,7 +158,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
 
               gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate_lab, feat_tab_alt = feat_tab_alt)
 
-              yAxisMax_arm = get_yAxisMax(smpSNPdata = smpSNPdata, plot_chr = i)
+              yAxisMax_arm = get_yAxisMax_arm(smpSNPdata = smpSNPdata_a_2, plot_chr = i)
 
               gg_snv_arm_p <- plot_snv_arm(smpSNPdata_a = smpSNPdata_a_2, plot_arm = "p", plot_chr = i, yAxisMax = yAxisMax_arm)
 
