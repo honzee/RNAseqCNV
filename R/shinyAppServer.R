@@ -652,7 +652,7 @@ shinyAppServer <- function(input, output, session) {
 
   #parse the alt_text text input and check whether the format is acceptable
   acceptable <- eventReactive(input$alt_text, {
-    if (any(str_detect(string = alt_vec(), pattern = "^(\\?){0,1}([1-9]|1[0-9]|2[0-2]|X){1}[p-q]{0,1}(\\+|-)$|^none$") == FALSE)) {
+    if (any(str_detect(string = alt_vec(), pattern = "^(\\?){0,1}([1-9]|1[0-9]|2[0-2]|X){1}[p-q]{0,1}(\\+|-){0,1}$|^none$") == FALSE)) {
       return(FALSE)
     } else {
       return(TRUE)

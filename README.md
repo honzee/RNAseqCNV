@@ -1,9 +1,14 @@
 # RNAseqCNV
 
 ### A tool in R for analysis of copy number variations from RNA-seq data
-The aim of this R package is to enable analysis, visualization and automatic estimation of large-scale (arm-level) copy number variations (CNVs) from RNA-seq data. Users can use either a wrapper function or a shiny app to create clear figures and automatically estimate CNVs on chromosome arm level. The app serves also as an interface to view and check the reliability of the results.
+This R package is a tool for analysis, visualization and automatic estimation of large-scale (arm-level) copy number variations (CNVs) from RNA-seq data. Users can use either a wrapper function or a shiny app to create clear figures and automatically estimate CNVs on chromosome arm level. The app serves also as an interface to view and check the results.
 
-### Installation
+### Table of contents
+1. [Installation](#installation)
+2. [Functionality](#functionality)
+  1. [Input](#input)
+
+###  1. Installation <a name="installation"></a>
 Users must have [R](https://www.r-project.org/) installed. [Rstudio](https://rstudio.com/products/rstudio/) is optional but recommended IDE.
 
 To download RNAseqCNV package from GitHub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
@@ -15,8 +20,8 @@ install.packages("devtools")
 devtools::install_github(repo = "honzee/RNAseqCNV")
 ```
 
-### Functionality
-The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a shiny app which is deployed by launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function arguments. The app on the other hand enables easier browsing and checking of the results. 
+### 2. Functionality <a name="functionality"></a>
+The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The app on the other hand enables easier browsing and checking of the results. 
 
 ```
 # Examples of basic function calls:
@@ -29,7 +34,7 @@ RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_
 launchApp()
 ```
 
-#### Input
+#### 2.1. Input <a name="input"></a>
 Both the wrapper and the shiny app receive the same required input. Per-gene read count and SNV minor allele frequency (MAF) and depth are used to produce the results. Therefore, two types of files are needed for each sample.
 
 To use the wrapper or analyze samples inside the shiny application, path to **config file** and **metadata file** in correct formats need to be provided.
@@ -128,7 +133,7 @@ The estimated gender, arm-level alterations and chromosome number are saved in t
 | SJALL049672_D1 | male   | 34      | 2-, 3-, 4-, 5-, 7-, 9-, 13-, 15-, 16-, 17-, 20-, ?21, 22-                                   |
 | SJALL015927_D1 | female | 52      | ?6p+, 6q+, 10+, 14+, 17q+, 18+, 21+, 21+, X+                                                |
 
-#### Basic function parameters
+#### Basic function parameters <a name="basic_params"></a>
 
 Explanation of basic wrapper function parameters and shiny app options
 
@@ -167,7 +172,7 @@ Both panels of the main figure are important for discerning large-scale CNVs. By
 
 The figure below will serve as an example for result interpretation.
 
-[main figure 2](./README/main_fig_2.png)
+![main figure 2](./README/main_fig_2.png)
 
 - diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The expression should be centered around zero (especially if diploid level adjustment was performed). The density graphs have a clear, high peak around 0.5 as would be expected with two chromosomes with two different alleles. SNVs with MAF outside the range 0.05 to 0.9 are filtered since these are mostly unifnormative.
 
@@ -188,3 +193,30 @@ In this case, it is clear, that there is at least partial gain on q arm of chrom
 ![Figure with high number of deletions](./README/near_hap_adj.png)
 
 - deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The deletions have significantly lower expression in comparison to diploid chromosomes. Also the MAF density graph suggests, that there is only a single allele. However, the deletion of chromosome 17 is not complete since there is still small but visible peak around 0.5.
+
+### Shiny app
+
+The shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. Moreover, it help user to browse easier through the results and providers an interface for manual checking and correction of the CNVs called by the package. It is launched by:
+```
+launchApp()
+```
+#### Input tab
+
+![Input tab](./README/input_tab.png)
+
+The shiny app needs a metadata file and a config file to function. If both files are suplied and the analysis has not yet been performed the users can analyse either only the first sample or analyze all of the samples from the metadata table. In case that the analysis with this metadata file and config file was already perfomed (either through RNAseqCNV_wrapper or with the app during earlier instance), the two other tabs (Manual CNV analysis and Export) will be shown.
+
+Users can tweak the arguments [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
+
+##### Mock analysis
+In case the user wants to test the app and the package as a whole, there is an option to perform mock analysis on in-built dat. It can be run without any input (even without config and metadata). The results will be stored in the directory selected by the user after clicking the button "Mock analysis". The Manual analysis tab and Export tab will be shown after the in-built samples are analyzed.
+
+#### Manual analysis tab
+![Manual analysis tab](./README/manual_analysis_tab.png)
+
+In this tab, users can browse through the analyzed samples and arm-level figures (if generated). The user can correct the results manually and add comments. After the corrections are completed "Save" button should be clicked in order to save the changes into the manual analysis table in the output directory. In case the user wants to revert the changes back to the default as produced by the analysis, button "Default analysis" can be clicked to achieve this.
+
+#### Export
+![Export tab](./README/export.png)
+
+The tab enables to customize the estimation table by selecting the desired columns to be kept. This table can be subsequently saved into a directory, which is chosen after clicking the "Export to selected directory" button.

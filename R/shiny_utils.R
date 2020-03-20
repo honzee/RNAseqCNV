@@ -306,6 +306,7 @@ plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
         )
     }
   }
+  return(gp.maf)
 }
 
 ####arrange expression and snv graph####
