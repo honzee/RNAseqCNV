@@ -1,7 +1,7 @@
 # RNAseqCNV
 
-### A tool in R for analysis of copy number variations from RNA-seq data
-This R package is a tool for analysis, visualization and automatic estimation of large-scale (arm-level) copy number variations (CNVs) from RNA-seq data. Users can use either a wrapper function or a shiny app to create clear figures and automatically estimate CNVs on chromosome arm level. The app serves also as an interface to view and check the results.
+### An R package for analysis of copy number variations (CNV) from RNA-seq data
+This R package is for analysis, visualization and automatic estimation of large-scale (chromosomoal and arm-level) CNVs from RNA-seq data. Users can use either a wrapper function or a Shiny app to generate CNV figures and automatically estimate CNVs on each chromosome. The Shiny app also serves as an interface to view and double-check the predicted CNV results.
 
 ### Table of contents
 1.[Installation](#installation)<br/>
