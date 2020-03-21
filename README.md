@@ -267,6 +267,6 @@ In case the user wants to test the app and the package as a whole, there is an o
 In this tab, users can browse through the analyzed samples and arm-level figures (if generated). The user can correct the results manually and add comments. After the corrections are completed "Save" button should be clicked in order to save the changes into the manual analysis table in the output directory. In case the user wants to revert the changes back to the default as produced by the analysis, button "Default analysis" can be clicked to achieve this.
 
 #### 4.3 Export <a name="export_tab"></a>
-![Export tab](./README/export.png)
+![Export tab](./README/export_tab.png)
 
 The tab enables to customize the estimation table by selecting the desired columns to be kept. This table can be subsequently saved into a directory, which is chosen after clicking the "Export to selected directory" button.
