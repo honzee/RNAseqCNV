@@ -8,7 +8,7 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 2.[Functionality](#functionality)<br/>
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.     [Input](#input)<br/>
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.&nbsp[Input](#input)<br/>
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.[Config](#config)<br/>
 
