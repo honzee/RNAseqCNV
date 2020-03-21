@@ -259,7 +259,8 @@ shinyAppServer <- function(input, output, session) {
 
     if(length(figs) == 0) return(NULL)
 
-    fig_sam <- sub("_CNV_main_fig.png", "", figs)
+    sample_figs <- sub("_CNV_main_fig.png", "", figs)
+    fig_sam <- sample_figs[match(sample_figs, pull(react_val$metadata[, 1]))]
     return(fig_sam)
 
   })
@@ -664,8 +665,8 @@ shinyAppServer <- function(input, output, session) {
   observeEvent(input$alt_text, {
 
 
-    plus = sum(str_count(alt_vec(), "^([1-9]|^1[0-9]|^2[0-2]|^X){1}\\+$"))
-    minus = sum(str_count(alt_vec(), "^([1-9]|^1[0-9]|^2[0-2]|^X){1}-$"))
+    plus = sum(str_count(alt_vec(), "([1-9]|1[0-9]|2[0-2]|X){1}\\+$"))
+    minus = sum(str_count(alt_vec(), "([1-9]|1[0-9]|2[0-2]|X){1}-$"))
 
     updateTextInput(session, "chromn_text", value = (46 + plus - minus))
 

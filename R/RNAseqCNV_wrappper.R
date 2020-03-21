@@ -86,6 +86,12 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     #calculate normalized count values with DESeq2 normalization method
     count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
 
+    # if count file format was incorrect print out a message and skip this sample
+    if (is.character(count_norm)) {
+      message(count_norm)
+      next()
+    }
+
     #calculate median gene expression across diploid reference and analyzed sample
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
 

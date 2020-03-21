@@ -49,6 +49,13 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           #calculate noemalized count values
           count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop)
 
+          # if count file format was incorrect print out a message and skip this sample
+          if (is.character(count_norm)) {
+            showNotification(count_norm, duration = NULL, id = "not_valid_count_file", type = "message")
+            next()
+          }
+
+
           incProgress(amount = 0.5, detail = "Calculating expression medians for each gene")
 
           #calculate medians for analyzed genes

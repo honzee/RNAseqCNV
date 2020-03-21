@@ -19,29 +19,29 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   sample_n <- pull(sample_table, 1)[sample_num]
 
   #read the count table
-  count_table <- read.table(file = count_file, header = FALSE, row.names = 1, stringsAsFactors = FALSE)
-  if (ncol(count_table) != 1 | !is.numeric(count_table[, 1])) {
-    stop(paste0("Count table: ", count_file, " is in incorrect format"))
-  }
+  count_table <- fread(file = count_file)
+  data.table::setnames(count_table, colnames(count_table), c("ENSG", "count"))
 
   #check the count file format
-  if(ncol(count_table) != 1 | typeof(count_table[, 1]) != "integer") return(NULL)
+  if (ncol(count_table) != 2 | !is.numeric(count_table[, count])) {
+    return(paste0("Incorrect count file format for the sample: ", sample_n))
+  }
 
-  colnames(count_table) <- sample_n
-
-  #bind with baseline
-  final_mat <- cbind(count_table, diploid_standard)
+  #inner join reference and analyzed sample
+  data.table::setkey(count_table, ENSG)
+  data.table::setkey(diploid_standard, ENSG)
+  final_mat <- as.data.frame(count_table[diploid_standard, nomatch = 0])
 
   #keep genes for determining gender for later
-  gender_genes = final_mat %>% mutate(ENSG = rownames(.)) %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))
+  gender_genes = final_mat %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))
 
   #filter genes based on reads count; top 1-q have read count > N, filter base on weight
-  keepIdx = as.data.frame(final_mat) %>% mutate(keep_gene = apply(., MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), ENSG = rownames(.), id = row_number()) %>% filter(keep_gene == TRUE) %>%
+  keepIdx = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE) %>%
     inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
 
   # filter table for normalization, get rid of genes with 0 counts and keep genes for gender estimation
-  count_filt <- final_mat %>% mutate(ENSG = rownames(.)) %>% .[c(keepIdx), ] %>% .[pull(., 1) != 0, ] %>% bind_rows(gender_genes)
-  ENSG <- pull(count_filt, ENSG)
+  count_filt <- final_mat %>% .[c(keepIdx), ] %>% .[pull(., 2) != 0, ] %>% bind_rows(gender_genes)
+  ENSG <- count_filt$ENSG
   count_filt <- select(count_filt, -ENSG)
 
   #calculate per-gene standard geom_mean and remove zeros for size factor calculation
@@ -56,7 +56,10 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   }
 
   print(paste0("Normalization for sample: ", sample_n, " completed"))
+
+  #Modify table for downstream analysis
   rownames(count_norm) <- ENSG
+  colnames(count_norm)[1] <- sample_n
 
   return(count_norm)
 }
