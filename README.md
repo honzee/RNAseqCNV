@@ -65,7 +65,7 @@ devtools::install_github(repo = "honzee/RNAseqCNV")
 ```
 
 ### 2. Functionality <a name="functionality"></a>
-The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The app on the other hand enables easier browsing and checking of the results. 
+The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The app on the other hand enables easier browsing and checking of the results. 
 
 ```
 # Examples of basic function calls:
@@ -74,21 +74,21 @@ library(RNAseqCNV)
 # example of wrapper function (DO NOT RUN) 
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf")
 
-# launch the shiny app with:
+# launch the Shiny app with:
 launchApp()
 ```
 
 #### 2.1. Input <a name="input"></a>
-Both the wrapper and the shiny app receive the same required input. Per-gene read counts and SNV minor allele frequency (MAF) and depth are used to produce the results. Therefore, two types of files are needed for each sample. Examples of the input files can be found in the package directory. You can find the path with:
+Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) and depth are used to produce the results. Therefore, two types of files are needed for each sample. Examples of the input files can be found in the package directory. You can find the path with:
 
 ```
 file.path(find.package("RNAseqCNV"), "inst", "extdata")
 ```
 
-To use the wrapper or analyze samples inside the shiny application, path to **config file** and **metadata file** in correct formats need to be provided.
+To use the wrapper or analyze samples inside the Shiny application, path to **config file** and **metadata file** in correct formats need to be provided.
 
 ##### 2.1.1 Config <a name="config"></a>
-Config parameter expects a path to an R script as its argument. This R script defines paths to the input directories for both count files and files with snv information and also to the output directory. The names of variables inside the script must be identical as those in the example below:
+Config parameter expects a path to an R script as its argument. This R script defines paths to the input directories for both count files and files with SNV information and also to the output directory. The names of variables inside the script must be identical as those in the example below:
 ```
 out_dir = "/Path/to/output_dir"
 count_dir = "/Path/to/dir/with/count_files"
@@ -97,7 +97,7 @@ snv_dir = "/Path/to/dir/with/vcf_files"
 ```
 
 ##### 2.1.2 Metadata <a name="metadata"></a>
-Metadata parameter expects a path to a file with comma/tab/space separated table with three columns. The first column contains sample names, the second countains count file names and the third contains vcf/custom table file names. **The table cannot have a header and the order of these columns must be kept as in the example below:**
+Metadata parameter expects a path to a file with comma/tab/space separated table with three columns. The first column contains sample names, the second countains count file names and the third contains VCF/custom table file names. **The table cannot have a header and the order of these columns must be kept as in the example below:**
 
 |[]()|||
 |--- | --- | ---|
@@ -120,7 +120,7 @@ An output of HTSeq or similar read counting software. The table must have two co
 
 ##### 2.1.4 SNV information <a name="snv_files"></a>
 
-Either vcf file or custom tabular data are accepted.
+Either VCF file or custom tabular data are accepted.
 
 ###### 2.1.4.1 VCF <a name="vcf"></a>
 
@@ -137,7 +137,7 @@ The table has four required columns: <br/>
 - chr: chromosome the SNV is located on
 - start: locus of the SNV
 - depth: read depth for this locus
-- maf: minor allele frequency, can be calculated as depth for alternative (minor) allele divided by overall read depth of the locus.<br/>
+- maf: mutant allele frequency, can be calculated as depth for alternative (mutant) allele divided by overall read depth of the locus.<br/>
 The header names have to respect the format below:
 
 | chr | start | depth | maf    |
@@ -148,21 +148,21 @@ The header names have to respect the format below:
 
 ##### 2.1.5 Basic function parameters <a name="basic_params"></a>
 
-Explanation of basic wrapper function parameters and shiny app options.
+Explanation of basic wrapper function parameters and Shiny app options.
 
 ###### 2.1.5.1 Arm-level figures <a name="arm_level_figures_param"></a>
 The plotting of arm-level figures increases the per-sample runtime significantly. You can disable the this by:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = FALSE)
 ```
-or uncheck the appropriate box in the shiny app interface.
+or uncheck the appropriate box in the Shiny app interface.
 
 ###### 2.1.5.2 Estimation labels <a name="estimation_labels"></a>
 The estimation labels can be removed from the figures with:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", estimate_lab = FALSE)
 ```
-or by unchecking the appropriate box in the shiny app interface.
+or by unchecking the appropriate box in the Shiny app interface.
 
 ###### 2.1.5.3 Diploid adjustment <a name="diploid_adjustment"></a>
 Some samples may include high proportion of chromosomes with CNVs, such as the one below:
@@ -177,11 +177,11 @@ This functionality is by default turned on. To disable it:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", adjust = FALSE)
 ```
-or uncheck the appropriate box in the shiny app interface.
+or uncheck the appropriate box in the Shiny app interface.
 
 
 #### 2.2 Output <a name="output"></a>
-The output (figures and tables) of both wrapper and the shiny app will be saved in the output directory as specified in the config file.
+The output (figures and tables) of both wrapper and the Shiny app will be saved in the output directory as specified in the config file.
 
 ##### 2.2.1 Main figure <a name="main_figure"></a>
 
@@ -202,12 +202,12 @@ Users have the option to generate close up figures of each chromosome with eithe
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = TRUE)
 ```
-or ticking the appropriate box in the shiny app interface.
+or ticking the appropriate box in the Shiny app interface.
 
 The large panel in the middle is a close up of the main figure, specific for one chromosome. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. On both sides of this panel, there are two MAF density graphs, one for p arm and one for q arm. For chromosomes without p arm there is only one side panel on the left.
 
 ##### 2.2.3 Estimation table <a name="estimation_table"></a>
-The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv is meant to store the output of RNAseqCNV models. The manual_an_table.tsv stores the corrections made by users inside the shiny app.
+The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv is meant to store the output of RNAseqCNV models. The manual_an_table.tsv stores the corrections made by users inside the Shiny app.
 
 - sample: sample name as in the metadata table
 - gender: gender as estimated with respect to the expression of genes on chromosome Y
@@ -251,7 +251,7 @@ In this case, it is clear, that there is at least partial gain on q arm of chrom
 
 ### 4. Shiny app <a name="shiny_app"></a>
 
-The shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. Moreover, it help user to browse easier through the results and providers an interface for manual checking and correction of the CNVs called by the package. It is launched by:
+The Shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. Moreover, it help user to browse easier through the results and providers an interface for manual checking and correction of the CNVs called by the package. It is launched by:
 ```
 launchApp()
 ```
@@ -259,7 +259,7 @@ launchApp()
 
 ![Input tab](./README/input_tab.png)
 
-The shiny app needs a metadata file and a config file to function. If both files are suplied and the analysis has not yet been performed the users can analyse either only the first sample or analyze all of the samples from the metadata table. In case that the analysis with this metadata file and config file was already perfomed (either through RNAseqCNV_wrapper or with the app during earlier instance), the two other tabs (Manual CNV analysis and Export) will be shown.
+The Shiny app needs a metadata file and a config file to function. If both files are suplied and the analysis has not yet been performed the users can analyse either only the first sample or analyze all of the samples from the metadata table. In case that the analysis with this metadata file and config file was already perfomed (either through RNAseqCNV_wrapper or with the app during earlier instance), the two other tabs (Manual CNV analysis and Export) will be shown.
 
 Users can tweak the arguments [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
 
