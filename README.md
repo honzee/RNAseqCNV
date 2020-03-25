@@ -53,7 +53,7 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 
 ###  1. Installation <a name="installation"></a>
-Users must have <a href="https://www.r-project.org/" target="_blank">[R]</a> and [Rtools](https://cran.r-project.org/bin/windows/Rtools/) installed. [Rstudio](https://rstudio.com/products/rstudio/) is optional but recommended IDE.
+Users must have <a href="https://www.r-project.org/" target="_blank">R</a> and [Rtools](https://cran.r-project.org/bin/windows/Rtools/) installed. [Rstudio](https://rstudio.com/products/rstudio/) is optional but recommended IDE.
 
 To download RNAseqCNV package from GitHub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
 ```
