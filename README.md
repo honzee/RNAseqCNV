@@ -189,18 +189,18 @@ The output (figures and tables) of both wrapper and the Shiny app will be saved 
 
 The main figure consists of two panels.
 
-The upper panel shows the visualization of per-chromosome expression level. Y axis shows log2 fold change of gene expression against reference samples, x axis is divided into 23 chromosomes from 1-X (chromosome Y purpousely excluded). The position along the x axis represents the position of genes on a chromosome. For each chromosome, a weighted boxplot is drawn based upon the distribution of normalized expression of genes on that chromosome. The median expression value of a chromosome is also represented by the color of a boxplot on scale from blue (low median of expression), white (median expression around 0) to red(high median of expression). For each chromosome a pair of random forrest models estimates the copy number. This estimation can be seen in the upper part of each facet. The red colour of this estimation label signifies lower confidence (quality) of CNV call. 
+The upper panel shows the per-chromosome gene expression level. Y axis shows log2 fold change of gene expression against reference samples; x axis shows 23 chromosomes from 1-22-X (chromosome Y is excluded). x axis also represents the position of genes on each chromosome. For each chromosome, a weighted boxplot (1/4, 1/2 and 3/4 quantile) is drawn based upon the distribution of normalized gene expression. For each chromosome, Random Forrest algorithm is used to estimate the CNVs and the results are marked on each chromosome. The CNV calls with low confidence (quality) are highlighted in red. 
 
-The bottom panel shows the density graphs of MAF for each chromosome. It is important to note that only MAF values in the interval from 0.05 to 0.9 were kept, since the SNVs with values out of this range are not helpful in determining CNVs. In the upper part of each density graph there is also a peak distance number. It is the distance on x axis between two highest peaks in the density graph. This can help in distinguishing between CNVs and also copy neutral loss of heterozygozity (LOH).
+The lower panel shows the density graphs of MAF for each chromosome. Please note that only the MAF of heterozygous SNVs (MAF from 0.05 to 0.9 were) is used in determining CNVs. Peak distance, which measures the distance between the two highest peaks in the MAF density plot on x axis, is also marked at the top.
 
 ##### 2.2.2 Arm-level figures <a name="arm_level_figure"></a>
 
 ![arm level figure 1](./README/arm_level_1.png)
 
-Users have the option to generate close up figures of each chromosome with either
+Users have the option to generate arm-level CNV figures with either
 
 ```
-RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = TRUE)
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", **bold text arm_lvl = TRUE **)
 ```
 or ticking the appropriate box in the shiny app interface.
 
