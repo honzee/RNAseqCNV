@@ -235,23 +235,23 @@ The figure below is an example for result interpretation.
 
 - single gain: 6, 10, 14, 18. The expression is significantly higher than that of diploid chromosomes. Meanwhile, the MAF density graph shows imbalance of allele distribution (3 copies in total, 1:2 or 2:1), which is typical for single copy gain.
 
-- double gain: 21. The expression is usually even higher than that of single copy gain. However, the MAF graphs can have two patterns according to the copy of alleles (4 copies in total, 3:1 or 2:2). In this case, the MAF density peak centered around 0.5 indicates two additional copies are from different chromosomes (one maternal and one paternal).
+- double gain: 21. The expression is usually even higher than that of single copy gain. However, the MAF graphs can have two patterns according to the copy of alleles (4 copies in total, 3:1 or 2:2). In this case, the MAF density peak is centered around 0.5 indicating two additional copies are from different alleles (maternal and paternal).
 
-- chromosome X: Estimation of CNVs on chromosome X is more tricky since X inactivation in female and MAF graphs are usually uninformative. However, we can at least roughly approximate whether a gain or loss of X chromosome has occured by the expression level. In this case the higher expression suggests a gain of at least one copy.
+- chromosome X: Estimation of CNVs on chromosome X is more challenging since X inactivation in female makes MAF graphs not informative. However, approximate copy number of X chromosome can be estimated based on the expression level. In this case the higher expression suggests a single copy gain at least.
 
-- partial gain/loss: The expression level level of partial gain/deletion is somewhere in between the diploid chromosomes and chromosomes with whole chromosomal change. The MAF density graph is distorted, but not in a typical pattern. Partial changes are marked as "ab" in the main figure which can lead us to further examination of this chromosome in the arm-level figure:
+- partial gain/loss: Large CNV segments shorter than whole chromosome. The MAF density is normally distorted, but not in a typical pattern. Partial CNVs are marked as "ab" in the main figure which need further curation on the arm-level:
 
 ![arm level figure 2](./README/arm_level_2.png)
 
-In this case, it is clear, that there is at least partial gain on q arm of chromosome 17.
+In this case, it is clear, that there is partial gain on q arm of chromosome 17.
 
 ![Figure with high number of deletions](./README/near_hap_adj.png)
 
-- deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The deletions have significantly lower expression in comparison to diploid chromosomes. Also the MAF density graph suggests, that there is only a single allele. However, the deletion of chromosome 17 is not complete since there is still small but visible peak around 0.5.
+- 1 copy deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The chromosomes with deletions have significantly lower gene expression compared to diploid ones, and the imbalanced MAF density suggests only one copy of alleles are left for these chromosomes.
 
 ### 4. Shiny app <a name="shiny_app"></a>
 
-The shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. Moreover, it help user to browse easier through the results and providers an interface for manual checking and correction of the CNVs called by the package. It is launched by:
+The Shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. In addition, it providers an interactive interface to view the result and curate the reported CNVs. It is launched by:
 ```
 launchApp()
 ```
@@ -259,19 +259,19 @@ launchApp()
 
 ![Input tab](./README/input_tab.png)
 
-The shiny app needs a metadata file and a config file to function. If both files are suplied and the analysis has not yet been performed the users can analyse either only the first sample or analyze all of the samples from the metadata table. In case that the analysis with this metadata file and config file was already perfomed (either through RNAseqCNV_wrapper or with the app during earlier instance), the two other tabs (Manual CNV analysis and Export) will be shown.
+The Shiny app needs a metadata file and a config file as input. Users have the option to analyze the first sample as a test runn or full analyze of all the samples in the metadata table. After the analysis (either through RNAseqCNV_wrapper or Shiny app), the two other tabs (Manual CNV analysis and Export) will be shown.
 
-Users can tweak the arguments [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
+Users can adjust the parameters [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
 
 ##### 4.1.1 Mock analysis <a name="mock_analysis"></a>
-In case the user wants to test the app and the package as a whole, there is an option to perform mock analysis on in-built dat. It can be run without any input (even without config and metadata). The results will be stored in the directory selected by the user after clicking the button "Mock analysis". The Manual analysis tab and Export tab will be shown after the in-built samples are analyzed.
+To test the app and the package, there is an option to perform mock analysis with built-in example data without any input config and metadata. The results will be saved in the directory selected by the user after clicking the button "Mock analysis". The Manual analysis tab and Export tab will be available after the mock analysis is done.
 
 #### 4.2 Manual analysis tab <a name="manual_analysis_tab"></a>
 ![Manual analysis tab](./README/manual_analysis_tab.png)
 
-In this tab, users can browse through the analyzed samples and arm-level figures (if generated). The user can correct the results manually and add comments. After the corrections are completed "Save" button should be clicked in order to save the changes into the manual analysis table in the output directory. In case the user wants to revert the changes back to the default as produced by the analysis, button "Default analysis" can be clicked to achieve this.
+In this tab, users can browse through the analyzed samples and arm-level figures (if generated). Users can correct the CNV calls manually and add comments. After manual curation, users can click "Save" button to save the changes into the manual analysis table in the output directory. Button "Default analysis" can restore the original CNV output into the manual analysis table.
 
 #### 4.3 Export <a name="export_tab"></a>
 ![Export tab](./README/export_tab.png)
 
-The tab enables to customize the estimation table by selecting the desired columns to be kept. This table can be subsequently saved into a directory, which is chosen after clicking the "Export to selected directory" button.
+This tab enables customized table export by selecting desired columns.
