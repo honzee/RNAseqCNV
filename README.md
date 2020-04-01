@@ -200,19 +200,19 @@ The lower panel shows the density graphs of MAF for each chromosome. Please note
 Users have the option to generate arm-level CNV figures with either
 
 ```
-RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", **arm_lvl = TRUE**)
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = TRUE)
 ```
-or ticking the appropriate box in the shiny app interface.
+or checking the option in the Shiny app.
 
-The large panel in the middle is a close up of the main figure, specific for one chromosome. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. On both sides of this panel, there are two MAF density graphs, one for p arm and one for q arm. For chromosomes without p arm there is only one side panel on the left.
+The middle panel is a zoom-in view of one chromosome in the main figure. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. P and q arm's MAF density graphs are shown on either side. Chromosomes without p arm are adjusted accordingly.
 
 ##### 2.2.3 Estimation table <a name="estimation_table"></a>
-The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv is meant to store the output of RNAseqCNV models. The manual_an_table.tsv stores the corrections made by users inside the shiny app.
+The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv stores the output of RNAseqCNV models. The manual_an_table.tsv stores the manually curated results by users through the Shiny app.
 
 - sample: sample name as in the metadata table
-- gender: gender as estimated with respect to the expression of genes on chromosome Y
+- gender: estimated based on the expression of genes on chromosome Y
 - chrom_n: final number of whole chromosomes in the samples (only high quality, whole chromosome CNVs are taken into account)
-- alterations: alterations as estimated by random forest model. Gain is marked by a "+" sign, loss by "-" sign, double gain (and higher) by two identical alterations with "+" sign. P and q letters specify the arm, where the CNV occurs. ? signifies lower confidence of the classification judged by the percentage of trees that voted for this alteration, these calls should be checked manually by the user.
+- alterations: alterations as estimated by Random Forest model. Gain: "+"; loss: "-"; double gain (and higher): "++"; double loss: "--". 'p' and 'q' specify the chromosomal arms. '?' signifies low confidence CNV calls, whhich should be manually checked.
 
 | sample         | gender | chrom_n | alterations                                                                                 |
 |----------------|--------|---------|---------------------------------------------------------------------------------------------|
@@ -223,21 +223,21 @@ The estimated gender, arm-level alterations and chromosome number are saved in t
 
 ### 3. Output interpretation example <a name="output_intrepretation_example"></a>
 
-Both panels of the main figure are important for discerning large-scale CNVs. By combining the expression level information and MAF density graphs it is possible to estimate CNVs with higher accuracy. The list below represents only a few basic patterns of CNVs and the results will largely depend on the type of sample the user will be working with.
+By combining the gene expression level and MAF density graphs, it is possible to estimate CNVs with high accuracy and sensitivity. The examples below represent some of the common CNVs patterns.
 
-The figure below will serve as an example for result interpretation.
+The figure below is an example for result interpretation.
 
 ![main figure 2](./README/main_fig_2.png)
 
-- diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The expression should be centered around zero (especially if diploid level adjustment was performed). The density graphs have a clear, high peak around 0.5 as would be expected with two chromosomes with two different alleles. SNVs with MAF outside the range 0.05 to 0.9 are filtered since these are mostly unifnormative.
+- diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The median expression level should be centered around zero (especially if diploid level adjustment was performed). The MAF density graphs of heterozygous SNVs have the highest peaks around 0.5. 
 
-- copy neutral loss of heterozygozity: 9. The expression level is roughly on the level of other diploid chromosomes, which would suggest two copies, however, after inspection of MAF density graph we can see, that this is not the whole story. The shape of the density graph would suggest that there is only on chromosome copy, since the peaks are so wide apart. This pattern is consistent with LOH.
+- copy neutral loss of heterozygozity (LOH): 9. The expression is around the same level as other diploid chromosomes, which suggests two copies, however, the density graph is consistent with LOH, indicating this is copy neatural LOH.
 
-- single gain: 6, 10, 14, 18. The expression is significantly higher than for diploid chromosomes. At the same time, the MAF density graph suggests ratio of alleles 2:1/1:2, which is typical for single gain.
+- single gain: 6, 10, 14, 18. The expression is significantly higher than that of diploid chromosomes. Meanwhile, the MAF density graph shows imbalance of allele distribution (3 copies in total, 1:2 or 2:1), which is typical for single copy gain.
 
-- double gain: 21. The expression is usually even higher than in chromosomes with single gain. However, for double gains, the MAF graphs can have two patterns according to the ratio of alleles in the sample (3:1, 2:2). In this case the peak is centered around 0.5 since the two additional copies come from different chromosomes (one maternal, one paternal).
+- double gain: 21. The expression is usually even higher than that of single copy gain. However, the MAF graphs can have two patterns according to the copy of alleles (4 copies in total, 3:1 or 2:2). In this case, the MAF density peak centered around 0.5 indicates two additional copies are from different chromosomes (one maternal and one paternal).
 
-- chromosome X: Estimation of CNVs on chromosome X is more problematic, since due to X inactivation in women MAF graphs are usually uninformative. However, we can at least roughly approximate whether a gain or loss of X chromosome has occured by the expression level. In this case the higher expression suggests a gain of at least one copy.
+- chromosome X: Estimation of CNVs on chromosome X is more tricky since X inactivation in female and MAF graphs are usually uninformative. However, we can at least roughly approximate whether a gain or loss of X chromosome has occured by the expression level. In this case the higher expression suggests a gain of at least one copy.
 
 - partial gain/loss: The expression level level of partial gain/deletion is somewhere in between the diploid chromosomes and chromosomes with whole chromosomal change. The MAF density graph is distorted, but not in a typical pattern. Partial changes are marked as "ab" in the main figure which can lead us to further examination of this chromosome in the arm-level figure:
 
