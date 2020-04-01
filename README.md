@@ -200,7 +200,7 @@ The lower panel shows the density graphs of MAF for each chromosome. Please note
 Users have the option to generate arm-level CNV figures with either
 
 ```
-RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", **bold text arm_lvl = TRUE **)
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", **arm_lvl = TRUE**)
 ```
 or ticking the appropriate box in the shiny app interface.
 
