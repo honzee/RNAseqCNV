@@ -65,11 +65,7 @@ devtools::install_github(repo = "honzee/RNAseqCNV")
 ```
 
 ### 2. Functionality <a name="functionality"></a>
-<<<<<<< HEAD
-The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The app on the other hand enables easier browsing and checking of the results. 
-=======
-The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The Shiny app on the other hand enables easier browsing and checking of the results. 
->>>>>>> dbc96ac7a08f9de57cbf7f7903878fb0feee4257
+The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The Shiny app on the other hand enables easier browsing and checking of the results.
 
 ```
 # Examples of basic function calls:
@@ -83,11 +79,7 @@ launchApp()
 ```
 
 #### 2.1. Input <a name="input"></a>
-<<<<<<< HEAD
-Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) and depth are used to produce the results. Therefore, two types of files are needed for each sample. Examples of the input files can be found in the package directory. You can find the path with:
-=======
 Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) are used to produce the results. Therefore, two types of information are needed for each sample. Examples of the input files can be found in the package directory. Use the following command to locate the package directory:
->>>>>>> dbc96ac7a08f9de57cbf7f7903878fb0feee4257
 
 ```
 file.path(find.package("RNAseqCNV"), "inst", "extdata")
@@ -201,30 +193,31 @@ The output (figures and tables) of both wrapper and the Shiny app will be saved 
 
 The main figure consists of two panels.
 
-The upper panel shows the visualization of per-chromosome expression level. Y axis shows log2 fold change of gene expression against reference samples, x axis is divided into 23 chromosomes from 1-X (chromosome Y purpousely excluded). The position along the x axis represents the position of genes on a chromosome. For each chromosome, a weighted boxplot is drawn based upon the distribution of normalized expression of genes on that chromosome. The median expression value of a chromosome is also represented by the color of a boxplot on scale from blue (low median of expression), white (median expression around 0) to red(high median of expression). For each chromosome a pair of random forrest models estimates the copy number. This estimation can be seen in the upper part of each facet. The red colour of this estimation label signifies lower confidence (quality) of CNV call. 
+The upper panel shows the per-chromosome gene expression level. Y axis shows log2 fold change of gene expression against reference samples; x axis shows 23 chromosomes from 1-22-X (chromosome Y is excluded). x axis also represents the position of genes on each chromosome. For each chromosome, a weighted boxplot (1/4, 1/2 and 3/4 quantile) is drawn based upon the distribution of normalized gene expression. For each chromosome, Random Forrest algorithm is used to estimate the CNVs and the results are marked on each chromosome. The CNV calls with low confidence (quality) are highlighted in red. 
 
-The bottom panel shows the density graphs of MAF for each chromosome. It is important to note that only MAF values in the interval from 0.05 to 0.9 were kept, since the SNVs with values out of this range are not helpful in determining CNVs. In the upper part of each density graph there is also a peak distance number. It is the distance on x axis between two highest peaks in the density graph. This can help in distinguishing between CNVs and also copy neutral loss of heterozygozity (LOH).
+The lower panel shows the density graphs of MAF for each chromosome. Please note that only the MAF of heterozygous SNVs (MAF from 0.05 to 0.9 were) is used in determining CNVs. Peak distance, which measures the distance between the two highest peaks in the MAF density plot on x axis, is also marked at the top.
 
 ##### 2.2.2 Arm-level figures <a name="arm_level_figure"></a>
 
 ![arm level figure 1](./README/arm_level_1.png)
 
-Users have the option to generate close up figures of each chromosome with either
+Users have the option to generate arm-level CNV figures with either
 
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = TRUE)
 ```
-or ticking the appropriate box in the Shiny app interface.
 
-The large panel in the middle is a close up of the main figure, specific for one chromosome. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. On both sides of this panel, there are two MAF density graphs, one for p arm and one for q arm. For chromosomes without p arm there is only one side panel on the left.
+or checking the option in the Shiny app.
+
+The middle panel is a zoom-in view of one chromosome in the main figure. In the upper part in addition to the random forest estimated alteration, there is also the percentage of trees in the model that agreed upon this alteration. P and q arm's MAF density graphs are shown on either side. Chromosomes without p arm are adjusted accordingly.
 
 ##### 2.2.3 Estimation table <a name="estimation_table"></a>
-The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv is meant to store the output of RNAseqCNV models. The manual_an_table.tsv stores the corrections made by users inside the Shiny app.
+The estimated gender, arm-level alterations and chromosome number are saved in two tables in the output directory. The estimation_table.tsv stores the output of RNAseqCNV models. The manual_an_table.tsv stores the manually curated results by users through the Shiny app.
 
 - sample: sample name as in the metadata table
-- gender: gender as estimated with respect to the expression of genes on chromosome Y
+- gender: estimated based on the expression of genes on chromosome Y
 - chrom_n: final number of whole chromosomes in the samples (only high quality, whole chromosome CNVs are taken into account)
-- alterations: alterations as estimated by random forest model. Gain is marked by a "+" sign, loss by "-" sign, double gain (and higher) by two identical alterations with "+" sign. P and q letters specify the arm, where the CNV occurs. ? signifies lower confidence of the classification judged by the percentage of trees that voted for this alteration, these calls should be checked manually by the user.
+- alterations: alterations as estimated by Random Forest model. Gain: "+"; loss: "-"; double gain (and higher): "++"; double loss: "--". 'p' and 'q' specify the chromosomal arms. '?' signifies low confidence CNV calls, whhich should be manually checked.
 
 | sample         | gender | chrom_n | alterations                                                                                 |
 |----------------|--------|---------|---------------------------------------------------------------------------------------------|
@@ -235,55 +228,52 @@ The estimated gender, arm-level alterations and chromosome number are saved in t
 
 ### 3. Output interpretation example <a name="output_intrepretation_example"></a>
 
-Both panels of the main figure are important for discerning large-scale CNVs. By combining the expression level information and MAF density graphs it is possible to estimate CNVs with higher accuracy. The list below represents only a few basic patterns of CNVs and the results will largely depend on the type of sample the user will be working with.
+By combining the gene expression level and MAF density graphs, it is possible to estimate CNVs with high accuracy and sensitivity. The examples below represent some of the common CNVs patterns.
 
-The figure below will serve as an example for result interpretation.
+The figure below is an example for result interpretation.
 
 ![main figure 2](./README/main_fig_2.png)
 
-- diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The expression should be centered around zero (especially if diploid level adjustment was performed). The density graphs have a clear, high peak around 0.5 as would be expected with two chromosomes with two different alleles. SNVs with MAF outside the range 0.05 to 0.9 are filtered since these are mostly unifnormative.
+- diploid chromosomes: 1, 2, 3, 4, 5, 7, 8, 11, 12, 13, 15, 16, 19, 20, 22. The median expression level should be centered around zero (especially if diploid level adjustment was performed). The MAF density graphs of heterozygous SNVs have the highest peaks around 0.5. 
 
-- copy neutral loss of heterozygozity: 9. The expression level is roughly on the level of other diploid chromosomes, which would suggest two copies, however, after inspection of MAF density graph we can see, that this is not the whole story. The shape of the density graph would suggest that there is only on chromosome copy, since the peaks are so wide apart. This pattern is consistent with LOH.
+- copy neutral loss of heterozygozity (LOH): 9. The expression is around the same level as other diploid chromosomes, which suggests two copies, however, the density graph is consistent with LOH, indicating this is copy neatural LOH.
 
-- single gain: 6, 10, 14, 18. The expression is significantly higher than for diploid chromosomes. At the same time, the MAF density graph suggests ratio of alleles 2:1/1:2, which is typical for single gain.
+- single gain: 6, 10, 14, 18. The expression is significantly higher than that of diploid chromosomes. Meanwhile, the MAF density graph shows imbalance of allele distribution (3 copies in total, 1:2 or 2:1), which is typical for single copy gain.
 
-- double gain: 21. The expression is usually even higher than in chromosomes with single gain. However, for double gains, the MAF graphs can have two patterns according to the ratio of alleles in the sample (3:1, 2:2). In this case the peak is centered around 0.5 since the two additional copies come from different chromosomes (one maternal, one paternal).
+- double gain: 21. The expression is usually even higher than that of single copy gain. However, the MAF graphs can have two patterns according to the copy of alleles (4 copies in total, 3:1 or 2:2). In this case, the MAF density peak is centered around 0.5 indicating two additional copies are from different alleles (maternal and paternal).
 
-- chromosome X: Estimation of CNVs on chromosome X is more problematic, since due to X inactivation in women MAF graphs are usually uninformative. However, we can at least roughly approximate whether a gain or loss of X chromosome has occured by the expression level. In this case the higher expression suggests a gain of at least one copy.
+- chromosome X: Estimation of CNVs on chromosome X is more challenging since X inactivation in female makes MAF graphs not informative. However, approximate copy number of X chromosome can be estimated based on the expression level. In this case the higher expression suggests a single copy gain at least.
 
-- partial gain/loss: The expression level level of partial gain/deletion is somewhere in between the diploid chromosomes and chromosomes with whole chromosomal change. The MAF density graph is distorted, but not in a typical pattern. Partial changes are marked as "ab" in the main figure which can lead us to further examination of this chromosome in the arm-level figure:
+- partial gain/loss: Large CNV segments shorter than whole chromosome. The MAF density is normally distorted, but not in a typical pattern. Partial CNVs are marked as "ab" in the main figure which need further curation on the arm-level:
 
 ![arm level figure 2](./README/arm_level_2.png)
 
-In this case, it is clear, that there is at least partial gain on q arm of chromosome 17.
+In this case, it is clear, that there is partial gain on q arm of chromosome 17.
 
 ![Figure with high number of deletions](./README/near_hap_adj.png)
 
-- deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The deletions have significantly lower expression in comparison to diploid chromosomes. Also the MAF density graph suggests, that there is only a single allele. However, the deletion of chromosome 17 is not complete since there is still small but visible peak around 0.5.
+- 1 copy deletion: 1, 2, 3, 4, 5, 7, 8, 9, 11, 12, 13, 14, 15, 16, 17, 19, 20, 22. The chromosomes with deletions have significantly lower gene expression compared to diploid ones, and the imbalanced MAF density suggests only one copy of alleles are left for these chromosomes.
 
 ### 4. Shiny app <a name="shiny_app"></a>
-
-The Shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. Moreover, it help user to browse easier through the results and providers an interface for manual checking and correction of the CNVs called by the package. It is launched by:
+The Shiny app enables CNV analysis similar to the RNAseqCNV_wrapper. In addition, it provides an interactive interface to view the result and curate the reported CNVs. It is launched by:
 ```
 launchApp()
 ```
 #### 4.1 Input tab <a name="input_tab"></a>
-
 ![Input tab](./README/input_tab.png)
+The Shiny app needs a metadata file and a config file as input. Users have the option to analyze the first sample as a test run or full analyze of all the samples in the metadata table. After the analysis (either through RNAseqCNV_wrapper or Shiny app), the two other tabs (Manual CNV analysis and Export) will be shown.
 
-The Shiny app needs a metadata file and a config file to function. If both files are suplied and the analysis has not yet been performed the users can analyse either only the first sample or analyze all of the samples from the metadata table. In case that the analysis with this metadata file and config file was already perfomed (either through RNAseqCNV_wrapper or with the app during earlier instance), the two other tabs (Manual CNV analysis and Export) will be shown.
-
-Users can tweak the arguments [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
+Users can adjust the parameters [(mentioned earlier)](#basic_params) for the analysis through check boxes and radio buttons.
 
 ##### 4.1.1 Mock analysis <a name="mock_analysis"></a>
-In case the user wants to test the app and the package as a whole, there is an option to perform mock analysis on in-built dat. It can be run without any input (even without config and metadata). The results will be stored in the directory selected by the user after clicking the button "Mock analysis". The Manual analysis tab and Export tab will be shown after the in-built samples are analyzed.
+To test the app and the package, there is an option to perform mock analysis with built-in example data without any input config and metadata. The results will be saved in the directory selected by the user after clicking the button "Mock analysis". The Manual analysis tab and Export tab will be available after the mock analysis is done.
 
 #### 4.2 Manual analysis tab <a name="manual_analysis_tab"></a>
 ![Manual analysis tab](./README/manual_analysis_tab.png)
 
-In this tab, users can browse through the analyzed samples and arm-level figures (if generated). The user can correct the results manually and add comments. After the corrections are completed "Save" button should be clicked in order to save the changes into the manual analysis table in the output directory. In case the user wants to revert the changes back to the default as produced by the analysis, button "Default analysis" can be clicked to achieve this.
+In this tab, users can browse through the analyzed samples and arm-level figures (if generated). Users can correct the CNV calls manually and add comments. After manual curation, users can click "Save" button to save the changes into the manual analysis table in the output directory. Button "Default analysis" can restore the original CNV output into the manual analysis table.
 
 #### 4.3 Export <a name="export_tab"></a>
 ![Export tab](./README/export_tab.png)
 
-The tab enables to customize the estimation table by selecting the desired columns to be kept. This table can be subsequently saved into a directory, which is chosen after clicking the "Export to selected directory" button.
+This tab enables customized table export by selecting desired columns.
