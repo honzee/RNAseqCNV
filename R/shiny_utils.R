@@ -12,7 +12,7 @@
 #### functions for deseq norm testing ####
 
 # get normalized counts
-get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt, samp_prop, weight_table, weight_samp_prop) {
+get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt, samp_prop, weight_table, weight_samp_prop, batch, generate_weights) {
 
   #extract file names from sample table
   count_file <- pull(sample_table, "count_path")[sample_num]
@@ -27,39 +27,74 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
     return(paste0("Incorrect count file format for the sample: ", sample_n))
   }
 
-  #inner join reference and analyzed sample
+  # set column to join by
   data.table::setkey(count_table, ENSG)
-  data.table::setkey(diploid_standard, ENSG)
-  final_mat <- as.data.frame(count_table[diploid_standard, nomatch = 0])
+
+  if(batch == TRUE) {
+    for (i in 2:nrow(sample_table)) {
+
+      #extract file names from sample table
+      count_file <- pull(sample_table, "count_path")[i]
+      sample_n <- pull(sample_table, 1)[i]
+
+      #read the count table
+      count_table_sample <- fread(file = count_file)
+      data.table::setnames(count_table_sample, colnames(count_table_sample), c("ENSG", "count"))
+
+      #check the count file format
+      if (ncol(count_table_sample) != 2 | !is.numeric(count_table_sample[, count])) {
+        return(paste0("Incorrect count file format for the sample: ", sample_n))
+      }
+
+      #bind the tables together
+      data.table::setkey(count_table_sample, ENSG)
+      count_table <- count_table[count_table_sample, nomatch = 0]
+
+    }
+    final_mat <- as.data.frame(count_table)
+  } else {
+
+    #inner join diploid reference and analyzed sample
+    data.table::setkey(diploid_standard, ENSG)
+    final_mat <- as.data.frame(count_table[diploid_standard, nomatch = 0])
+
+  }
 
   #keep genes for determining gender for later
-  gender_genes = final_mat %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878"))
+  gender_genes = final_mat %>% filter(ENSG %in% "ENSG00000012817")
 
   #filter genes based on reads count; top 1-q have read count > N, filter base on weight
-  keepIdx = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE) %>%
-    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
+  keepIdx_tmp = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE) %>%
+    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name)
+
+  if (generate_weights == FALSE) {
+    keepIdx = keepIdx_tmp %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
+  } else {
+    keepIdx = keepIdx_tmp %>% pull(id)
+  }
 
   # filter table for normalization, get rid of genes with 0 counts and keep genes for gender estimation
-  count_filt <- final_mat %>% .[c(keepIdx), ] %>% .[pull(., 2) != 0, ] %>% bind_rows(gender_genes)
+  count_filt <- final_mat %>% .[c(keepIdx), ] %>% .[pull(., 2) != 0, ] %>% bind_rows(gender_genes) %>% distinct(ENSG, .keep_all = TRUE)
   ENSG <- count_filt$ENSG
   count_filt <- select(count_filt, -ENSG)
 
-  #calculate per-gene standard geom_mean and remove zeros for size factor calculation
-  pseudo_ref_des <- apply(X = count_filt, MARGIN = 1, function(x) gm_mean(x))
-  low_exp <- which(pseudo_ref_des == 0)
-  size_fac <- apply(count_filt[-low_exp, ], MARGIN = 2, function(x) median(x/pseudo_ref_des[-low_exp]))
+  #sample Deseq normalization
+  count_col <- as.data.frame(colnames(count_filt))
 
-  #Divide each column by size factor
-  count_norm <- count_filt
-  for (i in 1:ncol(count_filt)) {
-    count_norm[, i] <- count_filt[, i]/size_fac[i]
+  dds <- DESeq2::DESeqDataSetFromMatrix(colData = count_col, countData = count_filt, design= ~ 1)
+  dds_vst <- DESeq2::varianceStabilizingTransformation(dds, blind=T, fitType='local')
+  count_norm <- as.data.frame(SummarizedExperiment::assay(dds_vst))
+
+  if (batch == TRUE) {
+    colnames(count_norm) <- pull(sample_table, 1)
+    print(paste0("Normalization completed"))
+  } else {
+    colnames(count_norm)[1] <- sample_n
+    print(paste0("Normalization for sample: ", sample_n, " completed"))
   }
-
-  print(paste0("Normalization for sample: ", sample_n, " completed"))
 
   #Modify table for downstream analysis
   rownames(count_norm) <- ENSG
-  colnames(count_norm)[1] <- sample_n
 
   return(count_norm)
 }
@@ -68,14 +103,19 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
 gm_mean = function(a){prod(a)^(1/length(a))}
 
 ####get median expression level####
-get_med <- function(count_norm, refDataExp) {
+get_med <- function(count_norm, refDataExp, weight_table, generate_weights) {
 
   ENSG=rownames(count_norm)
 
   ####calculate median for all genes####
-  pickGeneDFall=count_norm %>% mutate(ENSG=ENSG) %>% left_join(select(refDataExp, chr, ENSG), by = "ENSG") %>%
-    mutate(med = apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median)) %>%
-    select(ENSG, med)
+  pickGeneDFall_tmp=count_norm %>% mutate(ENSG=ENSG) %>% left_join(select(refDataExp, chr, ENSG), by = "ENSG")
+    if (generate_weights == TRUE) {
+      pickGeneDFall <- pickGeneDFall_tmp %>% mutate(med = apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median), var = apply(.[, -c(ncol(.) - 1, ncol(.))], 1, var)) %>%
+        select(ENSG, chr, med, var)
+    } else {
+      pickGeneDFall <- pickGeneDFall_tmp %>% mutate(med = apply(.[, -c(ncol(.) - 1, ncol(.))], 1, median)) %>%
+        select(ENSG, med)
+    }
 
   return(pickGeneDFall)
 }
@@ -161,7 +201,7 @@ calc_arm_lvl <- function(smpSNPdata.tmp) {
 ####normalize normalized counts (against median of expression for each gene) and join weight values####
 #beta-needs cleaning
 count_transform <- function(count_ns, pickGeneDFall, refDataExp, weight_table) {
-  count_ns_tmp = count_ns %>% left_join(pickGeneDFall, by = "ENSG") %>%
+  count_ns_tmp = count_ns %>% left_join(select(pickGeneDFall, ENSG, med), by = "ENSG") %>%
     mutate(count_nor_med=log2(.[, 1] / med) ) %>% filter(med != 0)
   sENSGinfor=refDataExp[match(count_ns_tmp$ENSG, refDataExp$ENSG), ] %>% select(chr, end, start)
 
@@ -184,15 +224,15 @@ remove_par <- function(count_ns, par_reg) {
 ####Calculate weighted boxplot values####
 get_box_wdt <- function(count_ns, chrs, scaleCols) {
   box_wdt <- count_ns %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = spatstat::weighted.median(x = count_nor_med,w = weight, na.rm = TRUE), low = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25),
-                                                                                   high = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5)
+                                                                                   high = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5) %>%
+    distinct(chr, .keep_all = TRUE)
 
   colours <- c()
   for(i in 1:nrow(box_wdt)) {
     colours[i] <- scaleCols$colour[which.min(abs(box_wdt$med_weig[i] - scaleCols$med_expr))]
   }
 
-  box_wdt <- box_wdt %>% ungroup() %>% mutate(medianCol = colours) %>%
-    distinct(chr, .keep_all = TRUE) %>% select(chr, med_weig, low, high, min, max, medianCol) %>%
+  box_wdt <- box_wdt %>% ungroup() %>% mutate(medianCol = colours) %>% select(chr, med_weig, low, high, min, max, medianCol) %>%
     mutate(chr = factor(x = chr, levels = c(1:22, "X")), pos = 0.5)
 
   return(box_wdt)
@@ -496,6 +536,19 @@ densityMaxY <- function(vec){
   }
 }
 
+######height of density curve on 0.5 on x axis
+find_y_0.5 <- function(vec) {
+  vec=vec[between(vec, 0.1, 0.9)]
+  len=length(vec)
+  if(len < 10){
+    return(0)
+  }else{
+    d=density(vec)
+    peak_0.5=d$y[which.min(abs(d$x - 0.5))]
+    return(peak_0.5)
+  }
+}
+
 ####adjust for diploid level based on diploid chromosomes####
 adjust_dipl <- function(feat_tab_alt, count_ns) {
 
@@ -524,7 +577,7 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref, chrs) {
            low_quart = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
 
     ungroup() %>% distinct(chr, arm, arm_med, up_quart, low_quart) %>%
-    left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max), by = c("chr", "arm")) %>%
+    left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max, y_0.5), by = c("chr", "arm")) %>%
 
     mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(arm_med), mean_all = mean(arm_med)) %>% ungroup() %>%
 
@@ -533,17 +586,18 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref, chrs) {
 
     arrange(chr) %>%
 
-    select(chr, arm, arm_med, up_quart, low_quart, peak_max, peak_m_dist, peakdist, sd, sds_median, sds_025, sds_075, n_02_04, n_04)
+    select(chr, arm, arm_med, up_quart, low_quart, peak_max, peak_m_dist, peakdist, y_0.5, sd, sds_median, sds_025, sds_075, n_02_04, n_04)
   return(summ_arm)
 
 }
 
 #### calculate chromosomal statistics ####
+# calc arm extended
 calc_arm <- function(smpSNPdata.tmp) {
   smpSNPdata <- smpSNPdata.tmp %>% group_by(chr, arm) %>% arrange(chr, desc(depth) ) %>%
     mutate(snvOrd=1:n()) %>%
     mutate(snvNum=n(), peak_max=densityMaxY(maf),
-           peak=findPeak(maf), peak_m_dist = abs(peak - 0.5), peakdist = find_peak_dist(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red')) %>%
+           peak=findPeak(maf), peak_m_dist = abs(peak - 0.5), y_0.5 = find_y_0.5(maf), peakdist = find_peak_dist(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red')) %>%
     ungroup() %>% mutate(chr = factor(chr, levels = c(1:22, "X", "Y")))
   return(smpSNPdata)
 }
@@ -660,4 +714,9 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
   message("Finished reading vcf")
   return(vcf_final)
+}
+
+#create weight table
+create_weights <- function(pickGeneDFall) {
+  weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(med^2, to = c(1, 100))*scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
 }
