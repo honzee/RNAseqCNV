@@ -14,10 +14,13 @@
 #' @param par_region table with pseudoautosomal regions. These regions will be filtered out.
 #' @param centr_refer table with chromosomal centromeric locations.
 #' @param weight_tab table with per-gene weight for calculating weighted quantiles for the boxplots in the main figure.
+#' @param generate_weights logical value, if TRUE, weights for calculating weighted quantiles will be contructed from variance and depth of the analyzed cohort of samples. If batch is TRUE, the weights will be analyzed
+#' from the batch of input samples, if FALSE the weight will be generate from joined diploid standard and analyzed sample.
 #' @param model_gend random forest model for estimating gender based on the expression of certain genes on chromosome Y.
 #' @param model_dip random forest model for estimating whether chromosome arm is diploid.
 #' @param model_alter random forest model for estimating the CNVs on chromosome arm.
 #' @param chroms vector of chromosomes to be analyzed.
+#' @param batch logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples
 #' @param diploid_standard table with 50 reference diploid samples for normalizing the data.
 #' @param scale_cols colour scaling for box plots according to the median of a boxplot.
 #' @param dpRationChromEdge table with chromosome start and end base positions.
@@ -26,9 +29,10 @@
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from diploid_standard parameter) and analyzed sample.
 #' @param weight_samp_prop proportion of samples with highest weight to be kept.
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              model_alter_noSNV = model_noSNV, chroms = chrs, dipl_standard = diploid_standard, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+                              model_alter_noSNV = model_noSNV, chroms = chrs, batch = FALSE, dipl_standard = diploid_standard[, c(1:20, 41)], scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
+  print("Analysis initiated")
   #Check the config file
   out_dir <- NULL
   count_dir <- NULL
@@ -69,10 +73,48 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
                           chrom_n = integer(),
                           alterations = character(), stringsAsFactors = FALSE)
 
+  #If batch analysis was selected normalize the input samples together
+  if(batch == TRUE) {
+
+    print("Normalizing gene expression and applying variance stabilizing transformation...")
+
+    #calculate normalized count values with DESeq2 normalization method for batch of samples from the input
+    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = 1, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch = TRUE, generate_weights)
+
+    #calculate median gene expression across diploid reference and analyzed sample for batch of samples from the input
+    pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData, generate_weights = generate_weights)
+
+    if (generate_weights == TRUE) {
+      #create weights based on variance of gene expression and expression depth of the batch of samples
+      weight_tab <- create_weights(pickGeneDFall)
+    }
+  }
+
   #Run the analysis for every sample in the table
   for(i in 1:nrow(sample_table)) {
 
     sample_name <- as.character(sample_table[i, 1])
+
+    #normalize the samples with in-build standard or standard from the input and calculate gene medians
+    if(batch == FALSE) {
+
+      #calculate normalized count values with DESeq2 normalization method
+      count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch, generate_weights)
+
+      #calculate median gene expression across diploid reference and analyzed sample
+      pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData, generate_weights = generate_weights)
+
+      if (generate_weights == TRUE) {
+        #create weights based on variance of gene expression and expression depth of the batch of samples
+        weight_tab <- create_weights(pickGeneDFall)
+      }
+    }
+
+    # if count file format was incorrect print out a message and skip this sample
+    if (is.character(count_norm)) {
+      message(count_norm)
+      next()
+    }
 
     #load SNP data
     smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chroms, snv_format = snv_format)
@@ -82,18 +124,6 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
       message(smpSNP[[1]])
       next()
     }
-
-    #calculate normalized count values with DESeq2 normalization method
-    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop)
-
-    # if count file format was incorrect print out a message and skip this sample
-    if (is.character(count_norm)) {
-      message(count_norm)
-      next()
-    }
-
-    #calculate median gene expression across diploid reference and analyzed sample
-    pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData)
 
     #filter SNP data base on dpSNP database
     smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keptSNP, minDepth = minDepth)
@@ -117,8 +147,8 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
 
     #estimate gender
-    count_ns_gend <- count_norm_samp %>% filter(ENSG %in% c("ENSG00000114374", "ENSG00000012817", "ENSG00000260197", "ENSG00000183878")) %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
-    gender = ifelse(randomForest:::predict.randomForest(model_gend, newdata = count_ns_gend, type = "class") == 1, "male", "female")
+    count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+    gender <- ifelse(predict(model_gend, newdata = count_ns_gend, type = "response") > 0.5, "male", "female")
 
     #preprocess data for karyotype estimation and diploid level adjustement
     # model diploid level
@@ -169,6 +199,18 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     chr_dir = file.path(out_dir, sample_name)
     dir.create(path = chr_dir)
 
+    # Create and plot the main figure
+    gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
+
+    gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name, estimate = estimate_lab)
+
+    fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
+
+    print(paste0("Plotting main figure: ", sample_name))
+
+    ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10, dpi = 200)
+
+
       #plot arm-level figures
       if(arm_lvl == TRUE) {
 
@@ -180,6 +222,8 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
 
         #plot every chromosome
         for (i in chr_to_plot) {
+
+          print(paste0("Plotting chr ", i, " arm-level figure"))
 
           gg_exp_zoom <- plot_exp_zoom(count_ns_final = count_ns_final, centr_res = centr_res, plot_chr = i,  estimate = estimate_lab, feat_tab_alt = feat_tab_alt)
 
@@ -196,16 +240,6 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
         }
 
       }
-
-      gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
-
-      gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name, estimate = estimate_lab)
-
-      fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
-
-      print(paste0("Plotting main figure: ", sample_name))
-
-      ggsave(plot = fig, filename = file.path(chr_dir, paste0(sample_name, "_CNV_main_fig.png")), device = 'png', width = 16, height = 10, dpi = 200)
 
       print(paste0("Analysis for sample: ", sample_name, " finished"))
   }

@@ -1,11 +1,19 @@
 Package: RNAseqCNV
 Title: A package for CNV analysis from RNA-seq data in B-cell acute lymphoblastic leukaemia
-Version: 1.0
+Version: 1.1
 Authors@R: 
-    person(given = "Jan",
+    c(person(given = "Jan",
            family = "Barinka",
            role = c("aut", "cre"),
-           email = "jan.barinka@lfmotol.cuni.cz")
+           email = "jan.barinka@lfmotol.cuni.cz"),
+      person(given = "Zhaohui",
+             family = "Gu",
+             role = c("aut"),
+             email = "Zhaohui.Gu@STJUDE.ORG"),
+      person(given = "Charles",
+             family = "Mullighan",
+             role = c("ctb"),
+             email = "Charles.Mullighan@STJUDE.ORG"))
 Description: This package was created in order to enable analysis of copy number alterations from RNA-seq data in B-cell acute lymphoblastic leukaemia, where such alteretions are frequent.
 License: What license it uses
 Encoding: UTF-8
@@ -23,5 +31,6 @@ Imports:
 	ggpubr,
 	spatstat,
 	randomForest,
-	shinyFiles
+	shinyFiles,
+	DESeq2
 RoxygenNote: 7.0.2

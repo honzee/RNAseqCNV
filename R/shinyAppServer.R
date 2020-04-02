@@ -126,8 +126,8 @@ shinyAppServer <- function(input, output, session) {
   figures <- eventReactive(input$preview, {
 
     gen_fig_wrapper(react_val$config,  react_val$metadata, snv_format = input$snv_format, avail(), sample_table(), to_analyse = 1, adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
-                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs,
-                    diploid_standard, scaleCols, dpRatioChrEdge)
+                    refDataExp, keepSNP, par_reg, centr_ref, weight_table, input$generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, input$batch,
+                    diploid_standard[, c(1:20, 41)], scaleCols, dpRatioChrEdge)
 
     chr_figs <- file.path(react_val$config["out_dir"], sample_table()[1, 1], paste0("chromosome_", c(1:22, "X"), ".png"))
     main_fig <- file.path(react_val$config["out_dir"], sample_table()[1, 1], paste0(sample_table()[1, 1], "_CNV_main_fig.png"))
@@ -190,8 +190,8 @@ shinyAppServer <- function(input, output, session) {
       if (!is.null(sample_table())) {
 
         gen_fig_wrapper(react_val$config,  react_val$metadata, snv_format = input$snv_format, avail(), sample_table(), to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
-                        refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs,
-                        diploid_standard, scaleCols, dpRatioChrEdge)
+                        refDataExp, keepSNP, par_reg, centr_ref, weight_table, input$generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, input$batch,
+                        diploid_standard[, c(1:20, 41)], scaleCols, dpRatioChrEdge)
 
         def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
         react_val$man_table <- def_table
@@ -704,9 +704,9 @@ shinyAppServer <- function(input, output, session) {
       react_val$metadata <- fread(system.file(package = "RNAseqCNVapp", "inst/extdata/metadata_mock"), header = FALSE)
       sample_table <-  react_val$metadata %>% mutate(count_path = file.path(react_val$config["count_dir"], pull(., 2)), snv_path = file.path(react_val$config["snv_dir"], pull(., 3)))
 
-          gen_fig_wrapper(react_val$config,  react_val$metadata, snv_format = input$snv_format, avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
-                          refDataExp, keepSNP, par_reg, centr_ref, weight_table, model_gender, model_dipl, model_alt, model_noSNV, chrs,
-                          diploid_standard, scaleCols, dpRatioChrEdge)
+          gen_fig_wrapper(react_val$config,  react_val$metadata, snv_format = "custom", avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
+                          refDataExp, keepSNP, par_reg, centr_ref, weight_table, generate_weights = input$generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, batch = FALSE,
+                          diploid_standard[, c(1:20, 41)], scaleCols, dpRatioChrEdge)
 
           def_table <- read.table(file = paste0(react_val$config["out_dir"], "/", "manual_an_table.tsv"), stringsAsFactors = FALSE, sep = "\t", header = TRUE)
           react_val$man_table <- def_table

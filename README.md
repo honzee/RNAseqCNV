@@ -1,7 +1,7 @@
 # RNAseqCNV
 
 ### An R package for analysis of copy number variations (CNV) from RNA-seq data
-This R package is for analysis, visualization and automatic estimation of large-scale (chromosomoal and arm-level) CNVs from RNA-seq data. Users can use either a wrapper function or a Shiny app to generate CNV figures and automatically estimate CNVs on each chromosome. The Shiny app also serves as an interface to view and double-check the predicted CNV results.
+This R package is for analysis, visualization and automatic estimation of large-scale (chromosomoal and arm-level) CNVs from RNA-seq data. Users can use either a wrapper function or a Shiny app to generate CNV figures and automatically estimate CNVs on each chromosome. The Shiny app provides an interactive interface to view and double-check the predicted CNV calls.
 
 ### Table of contents
 
@@ -53,9 +53,9 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 
 ###  1. Installation <a name="installation"></a>
-Users must have [R](https://www.r-project.org/) installed. [Rstudio](https://rstudio.com/products/rstudio/) is optional but recommended IDE.
+Users must have [R](https://www.r-project.org/) and [Rtools](https://cran.r-project.org/bin/windows/Rtools/) installed. [Rstudio](https://rstudio.com/products/rstudio/) is optional but recommended IDE.
 
-To download RNAseqCNV package from GitHub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
+To install RNAseqCNV package from GitHub, it is convenient to use the package devtools, namely function: install_github. The package installation can take a few minutes.
 ```
 # install devtools
 install.packages("devtools")
@@ -65,7 +65,11 @@ devtools::install_github(repo = "honzee/RNAseqCNV")
 ```
 
 ### 2. Functionality <a name="functionality"></a>
+<<<<<<< HEAD
 The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The app on the other hand enables easier browsing and checking of the results. 
+=======
+The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The Shiny app on the other hand enables easier browsing and checking of the results. 
+>>>>>>> dbc96ac7a08f9de57cbf7f7903878fb0feee4257
 
 ```
 # Examples of basic function calls:
@@ -79,16 +83,22 @@ launchApp()
 ```
 
 #### 2.1. Input <a name="input"></a>
+<<<<<<< HEAD
 Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) and depth are used to produce the results. Therefore, two types of files are needed for each sample. Examples of the input files can be found in the package directory. You can find the path with:
+=======
+Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) are used to produce the results. Therefore, two types of information are needed for each sample. Examples of the input files can be found in the package directory. Use the following command to locate the package directory:
+>>>>>>> dbc96ac7a08f9de57cbf7f7903878fb0feee4257
 
 ```
 file.path(find.package("RNAseqCNV"), "inst", "extdata")
 ```
 
-To use the wrapper or analyze samples inside the Shiny application, path to **config file** and **metadata file** in correct formats need to be provided.
 
-##### 2.1.1 Config <a name="config"></a>
-Config parameter expects a path to an R script as its argument. This R script defines paths to the input directories for both count files and files with SNV information and also to the output directory. The names of variables inside the script must be identical as those in the example below:
+To run the wrapper or the Shiny app, path to the **config file** and **metadata file** in correct format is needed.
+
+##### 2.1.1 Config file<a name="config"></a>
+Config file defines output directory (out_dir), read count file directory (count_dir) and SNV file directory (snv_dir). Change the file directories accordingly but keep the key words identical as the example below:
+
 ```
 out_dir = "/Path/to/output_dir"
 count_dir = "/Path/to/dir/with/count_files"
@@ -96,8 +106,9 @@ snv_dir = "/Path/to/dir/with/vcf_files"
 
 ```
 
-##### 2.1.2 Metadata <a name="metadata"></a>
-Metadata parameter expects a path to a file with comma/tab/space separated table with three columns. The first column contains sample names, the second countains count file names and the third contains VCF/custom table file names. **The table cannot have a header and the order of these columns must be kept as in the example below:**
+
+##### 2.1.2 Metadata file<a name="metadata"></a>
+Metadata file contains three columns (separated by comma/tab/space): 1. sample ID; 2. count file; 3. vcf/custom table file. **Header line is not accepted and the column order must be the same as the example below:**
 
 |[]()|||
 |--- | --- | ---|
@@ -105,9 +116,9 @@ Metadata parameter expects a path to a file with comma/tab/space separated table
 |SJALL014949_D1 | SJALL014949_D1.HTSeq | SJALL014949_D1.vcf|
 |SJALL014950_D1 | SJALL014950_D1.HTSeq | SJALL014950_D1.vcf|
 
-##### 2.1.3 Count files <a name="count_files"></a>
+##### 2.1.3 Read count file <a name="count_files"></a>
 
-An output of HTSeq or similar read counting software. The table must have two columns: first column with ensembl gene ids and second column with read count. The table should not have a header.
+Output of HTSeq-count or similar read counting software. The table must have two columns: 1. Ensembl gene ids; and 2. read count. The table should not have a header.
 
 | []() |    |
 |-----------------|-----|
@@ -124,7 +135,7 @@ Either VCF file or custom tabular data are accepted.
 
 ###### 2.1.4.1 VCF <a name="vcf"></a>
 
-VCF files with correct format can be acquired by running [GATK pipeline](https://gatk.broadinstitute.org/hc/en-us/articles/360035531192-RNAseq-short-variant-discovery-SNPs-Indels-).
+VCF files can be acquired by running [GATK pipeline](https://gatk.broadinstitute.org/hc/en-us/articles/360035531192-RNAseq-short-variant-discovery-SNPs-Indels-).
 
 | #CHROM | POS   | ID | REF | ALT | QUAL   | FILTER | INFO                                                                                                                                                                              | FORMAT         | sample_name           |
 |-------|-------|----|-----|-----|--------|--------|-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|----------------|--------------------------|
@@ -134,11 +145,12 @@ VCF files with correct format can be acquired by running [GATK pipeline](https:/
 
 ###### 2.1.4.2 Custom tabular data <a name="custom_table"></a>
 The table has four required columns: <br/>
-- chr: chromosome the SNV is located on
+- chr: chromosome of the SNV
 - start: locus of the SNV
-- depth: read depth for this locus
-- maf: mutant allele frequency, can be calculated as depth for alternative (mutant) allele divided by overall read depth of the locus.<br/>
-The header names have to respect the format below:
+- depth: read depth of this locus
+- maf: mutant allele frequency, can be calculated as depth of the mutant allele (compared to reference genome) divided by the overall read depth of the locus.<br/>
+The header names should follow the format below:
+
 
 | chr | start | depth | maf    |
 |-----|-------|-------|--------|
@@ -158,14 +170,14 @@ RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_
 or uncheck the appropriate box in the Shiny app interface.
 
 ###### 2.1.5.2 Estimation labels <a name="estimation_labels"></a>
-The estimation labels can be removed from the figures with:
+The CNV estimation labels can be removed from the figures with:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", estimate_lab = FALSE)
 ```
 or by unchecking the appropriate box in the Shiny app interface.
 
 ###### 2.1.5.3 Diploid adjustment <a name="diploid_adjustment"></a>
-Some samples may include high proportion of chromosomes with CNVs, such as the one below:
+Some samples may have high proportion of chromosomes with CNVs, such as the one below:
 
 ![Figure with high number of CNVs without adjustment](./README/near_hap_nonadj.png)
 
@@ -189,7 +201,7 @@ The output (figures and tables) of both wrapper and the Shiny app will be saved 
 
 The main figure consists of two panels.
 
-The upper panel shows the visualization of per-chromosom expression level. Y axis shows log2 fold change of expression against reference samples, x axis is divided into 23 separete facets, on each for chromosomes from 1-X (chromosome Y purpousely excluded) and the position along the x axis represents the position of genes on a chromosome. For each chromosome a weighted boxplot is drawn based upon the distribution of normalized expression of genes on that chromosome. The median expression value of a chromosome is also represented by the color of a boxplot on scale from blue (low median of expression), white (median expression around 0) to red(high median of expression). For each chromosome a pair of random forrest models estimates the copy number. This estimation can be seen in the upper part of each facet. The red colour of this estimation label signifies lower confidence (quality) of CNV call. 
+The upper panel shows the visualization of per-chromosome expression level. Y axis shows log2 fold change of gene expression against reference samples, x axis is divided into 23 chromosomes from 1-X (chromosome Y purpousely excluded). The position along the x axis represents the position of genes on a chromosome. For each chromosome, a weighted boxplot is drawn based upon the distribution of normalized expression of genes on that chromosome. The median expression value of a chromosome is also represented by the color of a boxplot on scale from blue (low median of expression), white (median expression around 0) to red(high median of expression). For each chromosome a pair of random forrest models estimates the copy number. This estimation can be seen in the upper part of each facet. The red colour of this estimation label signifies lower confidence (quality) of CNV call. 
 
 The bottom panel shows the density graphs of MAF for each chromosome. It is important to note that only MAF values in the interval from 0.05 to 0.9 were kept, since the SNVs with values out of this range are not helpful in determining CNVs. In the upper part of each density graph there is also a peak distance number. It is the distance on x axis between two highest peaks in the density graph. This can help in distinguishing between CNVs and also copy neutral loss of heterozygozity (LOH).
 
