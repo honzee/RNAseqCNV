@@ -267,7 +267,7 @@ filter_expr <- function(count_ns_final, cutoff = 0.6) {
 
 ####plot expression boxplot and point plot####
 plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
-  gp_expr <- ggplot() + ylim(ylim) + ylab("Normalized expression") +
+  gp_expr <- ggplot() + ylim(ylim) + ylab("log2 fold change of expression") +
     scale_fill_identity()+
     geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32, show.legend = FALSE)+
     scale_size(range = c(2, 6)) +
@@ -289,11 +289,12 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
   gp_expr <- gp_expr +
     facet_grid(.~chr) +
     theme_bw() +
-    theme(plot.title = element_text(hjust = 0.5, size = 15),
-          plot.subtitle = element_text(hjust = 0.5, size = 10),
+    theme(plot.title = element_text(hjust = 0.5, size = 18),
+          plot.subtitle = element_text(hjust = 0.5, size = 12),
           axis.title.x=element_blank(),
           axis.text.x = element_blank(),
-          axis.title.y=element_text(size = 12),
+          axis.title.y = element_text(size = 15),
+          axis.text.y = element_text(size = 12),
           axis.ticks = element_blank(),
           legend.justification = "top",
           legend.text = element_text(size = 15),
@@ -330,8 +331,9 @@ plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
             axis.ticks = element_blank(),
             strip.background = element_blank(),
             strip.text.x = element_blank(),
-            axis.title.y = element_text(size = 12),
-            axis.text.y = element_text(size = 7),
+            axis.title.x = element_text(size = 17),
+            axis.title.y = element_text(size = 15),
+            axis.text.y = element_text(size = 12),
             plot.margin = unit(c(0,1,1,1), "lines")
       )
     if (estimate == TRUE) {
@@ -512,7 +514,7 @@ find_peak_dist <- function(vec) {
     return(0)
   }else{
     d=density(vec)
-    #
+    #Choose the two highest peaks from the MAF density curve
     peaks_max = d$x[which(d$y %in% sort(d$y[which(diff(sign(diff(d$y) ))==-2)], decreasing = TRUE)[1:2])]
     #making sure the distance is measured between symetric peaks
     #symmetry treshold set at 1.2

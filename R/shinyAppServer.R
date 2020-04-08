@@ -8,7 +8,16 @@ shinyAppServer <- function(input, output, session) {
   #do the directories from the input exist?
   observe({
   if (!is.null(input$config)) {
-    source(input$config$datapath)
+    #is the confit in correct format?
+    conf_lines <- readLines(input$config$datapath)
+    if (length(conf_lines) == 3 &
+        any(grepl("count_dir", conf_lines)) &
+        any(grepl("snv_dir", conf_lines)) &
+        any(grepl("out_dir", conf_lines))) {
+      source(input$config$datapath)
+    } else {
+      {showNotification("Config file in incorrect format", duration = NULL, id = "not_valid_config", type = "message"); return(NULL)}
+    }
 
       #check count_dir
       if (!dir.exists(count_dir)) {
@@ -285,19 +294,13 @@ shinyAppServer <- function(input, output, session) {
 
   })
 
-  #Hide tabs in default
-  hideTab(inputId = "tabs", target = "Manual CNV analysis")
-  hideTab(inputId = "tabs", target = "Export")
-
   observe({
-
     if (react_val$check == TRUE) {
-      showTab(inputId = "tabs", target = "Manual CNV analysis")
-      showTab(inputId = "tabs", target = "Export")
+      shinyjs::show(selector = '#tabs li a[data-value="Manual CNV analysis"]')
+      shinyjs::show(selector = '#tabs li a[data-value="Export"]')
     } else {
-      hideTab(inputId = "tabs", target = "Manual CNV analysis")
-      hideTab(inputId = "tabs", target = "Export")
-
+      shinyjs::hide(selector = '#tabs li a[data-value="Manual CNV analysis"]')
+      shinyjs::hide(selector = '#tabs li a[data-value="Export]')
     }
   })
 

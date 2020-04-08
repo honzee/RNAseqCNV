@@ -1,174 +1,181 @@
 ####Multi-tab user interface####
-shinyAppUi <- navbarPage("RNAseq CNA analysis", id = "tabs",
+shinyAppUi <- fluidPage(shinyjs::useShinyjs(),
 
-                         #Input tab
+  # tags for hiding the tabs before the analysis
+  tags$head(tags$style(HTML("#tabs li a[data-value = 'Manual CNV analysis'], #tabs li a[data-value = 'Export'] {
+                            display: none;}"))),
 
-                         tabPanel("Input",
+  navbarPage("RNAseq CNA analysis", id = "tabs",
 
-                                  fluidPage(
+                           #Input tab
 
-                                    titlePanel("Input"),
+                           tabPanel("Input",
 
-                                    sidebarLayout(
+                                    fluidPage(
 
-                                      sidebarPanel(
-                                        fileInput("metadata", "metadata files"),
-                                        htmlOutput("mess_metadata"),
-                                        br(),
-                                        fileInput("config", "config file"),
-                                        htmlOutput("mess_config"),
-                                        br(),
-                                        radioButtons("snv_format", "Select input data format for svn information", choiceNames = c("vcf", "custom table"), choiceValues = c("vcf", "custom"), inline = TRUE),
-                                        br(),
-                                        checkboxInput("adjust_in", "Apply diploid adjustement", value = TRUE),
-                                        br(),
-                                        checkboxInput("batch", "Analyze samples as a batch", value = FALSE),
-                                        br(),
-                                        checkboxInput("generate_weights", "Generate gene weights from the analyzed samples", value = FALSE),
-                                        br(),
-                                        checkboxInput("arm_lvl", "Generate arm level figures (increases run-time)", value = TRUE),
-                                        br(),
-                                        checkboxInput("estimate_lab", "Plot with estimate labels", value = TRUE),
-                                        br(),
-                                        actionButton("preview", "Analyze first sample"),
-                                        br(),
-                                        br(),
-                                        actionButton("analyze", "Analyze all samples"),
-                                        br(),
-                                        br(),
-                                        shinyDirButton("dir_button", "Mock analysis", "Please select output directory for mock analysis")
+                                      titlePanel("Input"),
+
+                                      sidebarLayout(
+
+                                        sidebarPanel(
+                                          fileInput("metadata", "metadata files"),
+                                          htmlOutput("mess_metadata"),
+                                          br(),
+                                          fileInput("config", "config file"),
+                                          htmlOutput("mess_config"),
+                                          br(),
+                                          radioButtons("snv_format", "Select input data format for svn information", choiceNames = c("vcf", "custom table"), choiceValues = c("vcf", "custom"), inline = TRUE),
+                                          br(),
+                                          checkboxInput("adjust_in", "Apply diploid adjustement", value = TRUE),
+                                          br(),
+                                          checkboxInput("batch", "Analyze samples as a batch", value = FALSE),
+                                          br(),
+                                          checkboxInput("generate_weights", "Generate gene weights from the analyzed samples", value = FALSE),
+                                          br(),
+                                          checkboxInput("arm_lvl", "Generate arm level figures (increases run-time)", value = TRUE),
+                                          br(),
+                                          checkboxInput("estimate_lab", "Plot with estimate labels", value = TRUE),
+                                          br(),
+                                          actionButton("preview", "Analyze first sample"),
+                                          br(),
+                                          br(),
+                                          actionButton("analyze", "Analyze all samples"),
+                                          br(),
+                                          br(),
+                                          shinyDirButton("dir_button", "Mock analysis", "Please select output directory for mock analysis")
+                                        ),
+
+                                        mainPanel(
+                                          imageOutput("main_fig_prev", width = "100%", height = "auto"),
+                                          conditionalPanel(condition = "output.chr_fig_prev != null",
+                                            fluidRow(
+                                              column(2, actionButton("prev_butt_chr_prev", "Previous", width = "100%")
+                                              ),
+                                              column(2, offset = 8, actionButton("next_butt_chr_prev", "Next", width = "100%"))
+                                            )
+                                          ),
+                                          imageOutput("chr_fig_prev",  width = "100%", height = "auto")
+
+                                        )
+                                      )
+
+                                    )
+                           ),
+                           tabPanel("Manual CNV analysis", icon = icon("fa-3x"),
+
+                                    fluidPage(
+
+                                      tags$style(type = "text/css",
+                                                 "label {font-size: 16px;}"
                                       ),
 
-                                      mainPanel(
-                                        imageOutput("main_fig_prev", width = "100%", height = "auto"),
-                                        conditionalPanel(condition = "output.chr_fig_prev != null",
-                                          fluidRow(
-                                            column(2, actionButton("prev_butt_chr_prev", "Previous", width = "100%")
-                                            ),
-                                            column(2, offset = 8, actionButton("next_butt_chr_prev", "Next", width = "100%"))
-                                          )
-                                        ),
-                                        imageOutput("chr_fig_prev",  width = "100%", height = "auto")
-
-                                      )
-                                    )
-
-                                  )
-                         ),
-                         tabPanel("Manual CNV analysis",
-
-                                  fluidPage(
-
-                                    tags$style(type = "text/css",
-                                               "label {font-size: 16px;}"
-                                    ),
-
-                                    titlePanel("Manual Analysis"),
-                                    br(),
-                                    br(),
-                                    fluidRow(
-                                      column(3,
-                                             wellPanel(
-                                               h3("Select Figures"),
-                                               br(),
-                                               uiOutput("figure_select"),
-                                               br(),
-                                               uiOutput("chr_sel"),
-                                               br(),
-                                               h3("Estimation correction"),
-                                               br(),
-                                               br(),
-                                               uiOutput("gender_select"),
-                                               br(),
-                                               br(),
-                                               uiOutput("chromn_text"),
-                                               br(),
-                                               br(),
-                                               uiOutput("alt_text"),
-                                               htmlOutput("examp"),
-                                               htmlOutput("war_message"),
-                                               br(),
-                                               br(),
-                                               uiOutput("comments_text"),
-                                               br(),
-                                               br(),
-                                               fluidRow(
-                                                 column(6,
-                                                        uiOutput("default")
+                                      titlePanel("Manual Analysis"),
+                                      br(),
+                                      br(),
+                                      fluidRow(
+                                        column(3,
+                                               wellPanel(
+                                                 h3("Select Figures"),
+                                                 br(),
+                                                 uiOutput("figure_select"),
+                                                 br(),
+                                                 uiOutput("chr_sel"),
+                                                 br(),
+                                                 h3("Estimation correction"),
+                                                 br(),
+                                                 br(),
+                                                 uiOutput("gender_select"),
+                                                 br(),
+                                                 br(),
+                                                 uiOutput("chromn_text"),
+                                                 br(),
+                                                 br(),
+                                                 uiOutput("alt_text"),
+                                                 htmlOutput("examp"),
+                                                 htmlOutput("war_message"),
+                                                 br(),
+                                                 br(),
+                                                 uiOutput("comments_text"),
+                                                 br(),
+                                                 br(),
+                                                 fluidRow(
+                                                   column(6,
+                                                          uiOutput("default")
+                                                   ),
+                                                   column(3, offset = 3,
+                                                          uiOutput("save_butt")
+                                                   )
                                                  ),
-                                                 column(3, offset = 3,
-                                                        uiOutput("save_butt")
+                                                 fluidRow(
+                                                   column(3, offset = 9,
+                                                          htmlOutput("status"))
+                                                 )
+                                               )
+                                        ),
+                                        column(9,
+                                               fluidRow(
+                                                 column(2,
+                                                        uiOutput("prev_butt")
+                                                 ),
+                                                 column(8,
+                                                        htmlOutput("sample_num")
+                                                 ),
+                                                 column(2,
+                                                        uiOutput("next_butt"))
+                                               ),
+                                               fluidRow(
+                                                 column(12,
+                                                        imageOutput("main_fig", width = "100%", height = "auto")
                                                  )
                                                ),
-                                               fluidRow(
-                                                 column(3, offset = 9,
-                                                        htmlOutput("status"))
-                                               )
-                                             )
-                                      ),
-                                      column(9,
-                                             fluidRow(
-                                               column(2,
-                                                      uiOutput("prev_butt")
-                                               ),
-                                               column(8,
-                                                      htmlOutput("sample_num")
-                                               ),
-                                               column(2,
-                                                      uiOutput("next_butt"))
-                                             ),
-                                             fluidRow(
-                                               column(12,
-                                                      imageOutput("main_fig", width = "100%", height = "auto")
-                                               )
-                                             ),
-                                             conditionalPanel(condition = "output.chr_choices != null",
-                                                              fluidRow(
-                                                                column(2,
-                                                                       uiOutput("prev_butt_chr")
+                                               conditionalPanel(condition = "output.chr_choices != null",
+                                                                fluidRow(
+                                                                  column(2,
+                                                                         uiOutput("prev_butt_chr")
+                                                                  ),
+                                                                  column(2, offset = 8,
+                                                                         uiOutput("next_butt_chr"))
                                                                 ),
-                                                                column(2, offset = 8,
-                                                                       uiOutput("next_butt_chr"))
-                                                              ),
-                                                              fluidRow(
-                                                                column(12,
-                                                                       imageOutput("chr_fig", width = "100%", height = "auto")
+                                                                fluidRow(
+                                                                  column(12,
+                                                                         imageOutput("chr_fig", width = "100%", height = "auto")
+                                                                  )
                                                                 )
-                                                              )
-                                             )
+                                               )
+                                        )
                                       )
                                     )
-                                  )
-                         ),
-                         tabPanel("Export",
+                           ),
+                           tabPanel("Export",
 
-                                  fluidPage(
+                                    fluidPage(
 
-                                    titlePanel("Export analyzed table"),
+                                      titlePanel("Export analyzed table"),
 
-                                    sidebarLayout(
+                                      sidebarLayout(
 
-                                      sidebarPanel(
+                                        sidebarPanel(
 
-                                        uiOutput("columns"),
-                                        br(),
-                                        br(),
-                                        uiOutput("format"),
-                                        br(),
-                                        br(),
-                                        shinyDirButton("export", label = "Export to selected directory", title = "Select directory")
+                                          uiOutput("columns"),
+                                          br(),
+                                          br(),
+                                          uiOutput("format"),
+                                          br(),
+                                          br(),
+                                          shinyDirButton("export", label = "Export to selected directory", title = "Select directory")
 
-                                      ),
+                                        ),
 
-                                      mainPanel(
+                                        mainPanel(
 
-                                        h2("Output preview"),
-                                        br(),
-                                        br(),
-                                        tableOutput("prev_tab")
+                                          h2("Output preview"),
+                                          br(),
+                                          br(),
+                                          tableOutput("prev_tab")
+
+                                        )
 
                                       )
-
-                                    )
-                                  ))
+                                    ))
+  )
 )

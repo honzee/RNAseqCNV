@@ -32,5 +32,6 @@ Imports:
 	spatstat,
 	randomForest,
 	shinyFiles,
+	shinyjs,
 	DESeq2
 RoxygenNote: 7.0.2
