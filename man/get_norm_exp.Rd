@@ -11,7 +11,9 @@ get_norm_exp(
   minReadCnt,
   samp_prop,
   weight_table,
-  weight_samp_prop
+  weight_samp_prop,
+  batch,
+  generate_weights
 )
 }
 \description{

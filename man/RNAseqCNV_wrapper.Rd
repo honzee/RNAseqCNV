@@ -7,6 +7,7 @@
 RNAseqCNV_wrapper(
   config,
   metadata,
+  snv_format = "vcf",
   adjust = TRUE,
   arm_lvl = TRUE,
   estimate_lab = TRUE,
@@ -15,11 +16,14 @@ RNAseqCNV_wrapper(
   par_region = par_reg,
   centr_refer = centr_ref,
   weight_tab = weight_table,
+  generate_weights = FALSE,
   model_gend = model_gender,
   model_dip = model_dipl,
   model_alter = model_alt,
+  model_alter_noSNV = model_noSNV,
   chroms = chrs,
-  dipl_standard = diploid_standard,
+  batch = FALSE,
+  dipl_standard = diploid_standard[, c(1:20, 41)],
   scale_cols = scaleCols,
   dpRatioChromEdge = dpRatioChrEdge,
   minDepth = 20,
@@ -29,50 +33,55 @@ RNAseqCNV_wrapper(
 )
 }
 \arguments{
-\item{config}{R script assigning variables needed for the analysis}
+\item{config}{R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
+(either vcf or custom tabular data), out_dir - path to an output directory. More detailed description can be found in the package README file.}
 
-\item{metadata}{path to a metadata table with three columns. First colum represents sample names, second file names of count files, third file names of snv files.}
+\item{metadata}{path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
+More information is included in the package README file.}
 
-\item{adjust}{logical value, determines, whether the diploid boxplots should be centered around zero on y axis}
+\item{adjust}{logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.}
 
-\item{arm_lvl}{logical value, determines, wheter arm_lvl figures should be printed (increases run-time significantly)}
+\item{arm_lvl}{logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.}
 
-\item{estimate_lab}{logical value, determines, whether CNV estimation should be plotted in the final figure}
+\item{estimate_lab}{logical value, If TRUE, CNV estimation labels will be included in the final figure.}
 
-\item{referData}{table, reference data for ensamble name annotation}
+\item{referData}{table, reference data for gene annotation with ensamble ids}
 
-\item{keptSNP}{vector of SNPs to keep for the analysis}
+\item{keptSNP}{vector of realiable SNPs to keep for the MAF graphs}
 
-\item{par_region}{table with pseudoautosomal regions, in order for these regions to be fitlered out}
+\item{par_region}{table with pseudoautosomal regions. These regions will be filtered out.}
 
-\item{centr_refer}{table with centromeric locations per chromosome}
+\item{centr_refer}{table with chromosomal centromeric locations.}
 
-\item{weight_tab}{table with per-gene weight for adjusting the importance of each gene in calling CNA}
+\item{weight_tab}{table with per-gene weight for calculating weighted quantiles for the boxplots in the main figure.}
 
-\item{model_gend}{model for estimating gender based on expression of certain genes on chromosome Y}
+\item{generate_weights}{logical value, if TRUE, weights for calculating weighted quantiles will be contructed from variance and depth of the analyzed cohort of samples. If batch is TRUE, the weights will be analyzed
+from the batch of input samples, if FALSE the weight will be generate from joined diploid standard and analyzed sample.}
 
-\item{model_dip}{model for estimating whether chromosome arm is diploid}
+\item{model_gend}{random forest model for estimating gender based on the expression of certain genes on chromosome Y.}
 
-\item{model_alter}{model for estimating the CNV on chromosome arm}
+\item{model_dip}{random forest model for estimating whether chromosome arm is diploid.}
 
-\item{chroms}{vector of chromosomes to be analyzed}
+\item{model_alter}{random forest model for estimating the CNVs on chromosome arm.}
 
-\item{scale_cols}{colour scaling for box plot}
+\item{chroms}{vector of chromosomes to be analyzed.}
 
-\item{minDepth}{minimal depth of of SNV to be kept}
+\item{batch}{logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples}
+
+\item{scale_cols}{colour scaling for box plots according to the median of a boxplot.}
+
+\item{minDepth}{minimal depth of of SNV to be kept.}
 
 \item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt}
 
-\item{samp_prop}{sample proportion which is required to have at least minReadCnt reads for a gene}
+\item{samp_prop}{sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from diploid_standard parameter) and analyzed sample.}
 
-\item{weight_samp_prop}{proportion of samples to be kept according the their weight}
+\item{weight_samp_prop}{proportion of samples with highest weight to be kept.}
 
-\item{base_matrix}{matrix with rows being gene expression and columns DIPLOID samples. This matrix is used as a diploid reference.}
+\item{diploid_standard}{table with 50 reference diploid samples for normalizing the data.}
 
-\item{base_column}{column names for base_matrix parameter}
-
-\item{dpRationChromEdge}{table with chromosome start and end base positions}
+\item{dpRationChromEdge}{table with chromosome start and end base positions.}
 }
 \description{
-Wrapper for generating figures for analysis and preview figure
+Wrapper for generating figures and tables for CNV estimation from RNA-seq
 }

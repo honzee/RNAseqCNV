@@ -702,9 +702,9 @@ shinyAppServer <- function(input, output, session) {
 
     if (!is.integer(input$dir_button)) {
 
-      source(system.file(package = "RNAseqCNVapp", "inst/extdata/config_mock.txt"))
+      source(system.file(package = "RNAseqCNV", "inst/extdata/config_mock.txt"))
       react_val$config <- c(count_dir = count_dir, snv_dir = snv_dir, out_dir = parseDirPath(volumes, input$dir_button))
-      react_val$metadata <- fread(system.file(package = "RNAseqCNVapp", "inst/extdata/metadata_mock"), header = FALSE)
+      react_val$metadata <- fread(system.file(package = "RNAseqCNV", "inst/extdata/metadata_mock"), header = FALSE)
       sample_table <-  react_val$metadata %>% mutate(count_path = file.path(react_val$config["count_dir"], pull(., 2)), snv_path = file.path(react_val$config["snv_dir"], pull(., 3)))
 
           gen_fig_wrapper(react_val$config,  react_val$metadata, snv_format = "custom", avail = "all_present", sample_table = sample_table, to_analyse = nrow( react_val$metadata), adjust = input$adjust_in, arm_lvl = input$arm_lvl, estimate_lab = input$estimate_lab,
