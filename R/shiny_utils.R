@@ -387,9 +387,9 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
 
   #filter only for chromosome of interest
 
-  count_ns_chr <- filter(count_ns_final, chr == plot_chr, count_nor_med < 2.1 & count_nor_med > -2.1)
+  count_ns_chr <- filter(count_ns_final, chr == plot_chr, count_nor_med < 0.5 & count_nor_med > -0.5)
 
-  gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-2.1, 2.1)) + ylab("Normalized expression") +
+  gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-0.5, 0.5)) + ylab("Normalized expression") +
     geom_point(aes(x = normPos, y = count_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
     geom_smooth(aes(x = normPos, y = count_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
@@ -414,10 +414,10 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
     p_alt <- feat_tab_alt %>% filter(arm == "p", chr == plot_chr)
 
     gg_expr_zoom <- gg_expr_zoom +
-      geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1) +
+      geom_label(data = q_alt, aes(x = centr_res$q_midr[centr_res$chr == plot_chr], y = 0.4, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000)) +
       scale_color_manual(limits = c("low", "high"), values=c("orangered", "black")) +
       if(nrow(p_alt) > 0) {
-        geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.26, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000), nudge_y = 1)
+        geom_label(data = p_alt, aes(x = centr_res$p_midr[centr_res$chr == plot_chr], y = 0.4, label = paste0(alteration, ", " , alteration_prob*100, "%"), color = colour_arm, size = 15000))
       }
   }
 
