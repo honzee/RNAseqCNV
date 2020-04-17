@@ -317,14 +317,14 @@ plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
     snvNumDensityMaxY=smpSNPdata %>% select(chr, snvNum, peak_max, peakdist) %>% unique()
     yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$peak_max %>% max()
     snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05)
-    peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.15, label = round(peakdist, 3))
+    peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.1, label = round(peakdist, 3))
     gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") +
       geom_density(aes(maf, color=peakCol), show.legend = FALSE) +
-      geom_text(data = peakdist_dat, aes(x, y, label = label), vjust=0)+
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
+      geom_label(data = peakdist_dat, aes(x, y, label = label), fill = "white", color = "black", vjust=0)+
       scale_color_identity(guide = guide_legend(override.aes = list(color = "white")))+
       scale_x_continuous(breaks = round(c(1/3, 2/3), 3), labels = c("1/3", "2/3"), minor_breaks = NULL, limits = c(0,1)) +
-      scale_y_continuous(breaks = c(seq(from = 1, to = floor(yAxisMax)), yAxisMax*1.15), labels = c(seq(from = 1, to = floor(yAxisMax)), "peak dist."), limits = c(0, yAxisMax*1.2)) +
+      scale_y_continuous(breaks = c(seq(from = 1, to = floor(yAxisMax)), yAxisMax*1.15), labels = c(seq(from = 1, to = floor(yAxisMax)), "peak dist."), limits = c(0, yAxisMax*1.25)) +
       facet_grid(.~chr, scales="free_y") +
       theme_bw() +
       theme(axis.text.x = element_text(angle = 40, vjust = 0.5),
@@ -674,13 +674,13 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
   #read the vcf files
   message("Reading in vcf file..")
-  vcf_data <- fread(vcf_file)
+  vcf_data <- fread(vcf_file, skip = "#CHROM", header = "TRUE")
   #check whether the input is in correct format
   if (dim(vcf_data)[2] < 10) {
     vcf_final <- "Incorrect vcf file format. Incorrect number of columns"
     return(vcf_final)
   }
-  if (!identical(colnames(vcf_data)[2:8], c("POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"))) {
+  if (!identical(colnames(vcf_data)[1:9], c("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"))) {
     vcf_final <- "Incorrect vcf file format."
     return(vcf_final)
   }
@@ -720,5 +720,6 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
 #create weight table
 create_weights <- function(pickGeneDFall) {
-  weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(med^2, to = c(1, 100))*scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
-}
+  #weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(med^2, to = c(1, 100))*scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
+  weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
+  }
