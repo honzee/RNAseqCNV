@@ -12,7 +12,7 @@
 #### functions for deseq norm testing ####
 
 # get normalized counts
-get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt, samp_prop, weight_table, weight_samp_prop, batch, generate_weights) {
+get_norm_exp <- function(sample_table, sample_num, standard_samples, minReadCnt, samp_prop, weight_table, weight_samp_prop, batch, generate_weights) {
 
   #extract file names from sample table
   count_file <- pull(sample_table, "count_path")[sample_num]
@@ -55,8 +55,8 @@ get_norm_exp <- function(sample_table, sample_num, diploid_standard, minReadCnt,
   } else {
 
     #inner join diploid reference and analyzed sample
-    data.table::setkey(diploid_standard, ENSG)
-    final_mat <- as.data.frame(count_table[diploid_standard, nomatch = 0])
+    data.table::setkey(standard_samples, ENSG)
+    final_mat <- as.data.frame(count_table[standard_samples, nomatch = 0])
 
   }
 
@@ -722,4 +722,37 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 create_weights <- function(pickGeneDFall) {
   #weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(med^2, to = c(1, 100))*scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
   weight_table = pickGeneDFall %>% mutate(weight = scales::rescale(1/var, to = c(1, 100)), chromosome_name = chr) %>% select(ENSG, chromosome_name, weight)
+}
+
+#create standard table from input file names
+create_standard <- function(standard_samples, sample_table) {
+
+  dipl_samples <- match(standard_samples, sample_table[, 1])
+
+  for (i in dipl_samples) {
+
+    #extract file names from sample table
+    count_file <- pull(sample_table, "count_path")[i]
+    sample_n <- pull(sample_table, 1)[i]
+
+    #read the count table
+    count_table_sample <- fread(file = count_file)
+    data.table::setnames(count_table_sample, colnames(count_table_sample), c("ENSG", "count"))
+
+    #check the count file format
+    if (ncol(count_table_sample) != 2 | !is.numeric(count_table_sample[, count])) {
+      stop(paste0("Incorrect count file format for the sample: ", sample_n, ", which is also a standard sample."))
+    }
+
+    #bind the tables together
+    data.table::setnames(count_table_sample, colnames(count_table_sample), c("ENSG", sample_n))
+    data.table::setkey(count_table_sample, ENSG)
+    if (which(i == dipl_samples) == 1) {
+      count_table <- count_table_sample
+    } else {
+      count_table <- count_table[count_table_sample, nomatch = 0]
+    }
+
   }
+  return(count_table)
+}

@@ -21,16 +21,16 @@
 #' @param model_alter random forest model for estimating the CNVs on chromosome arm.
 #' @param chroms vector of chromosomes to be analyzed.
 #' @param batch logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples
-#' @param diploid_standard table with 50 reference diploid samples for normalizing the data.
+#' @param standard_samples character vector with sample names of samples which should be used as a standard for vst and log2 fold centering. The samples names must be included in the metadata table and batch analysis cannot be TRUE. If NULL (default), in-build standard samples will be used.
 #' @param scale_cols colour scaling for box plots according to the median of a boxplot.
 #' @param dpRationChromEdge table with chromosome start and end base positions.
 #' @param minDepth minimal depth of of SNV to be kept.
 #' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt
-#' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from diploid_standard parameter) and analyzed sample.
+#' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample.
 #' @param weight_samp_prop proportion of samples with highest weight to be kept.
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              model_alter_noSNV = model_noSNV, chroms = chrs, batch = FALSE, dipl_standard = diploid_standard[, c(1:20, 41)], scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+RNAseqCNV_wrapper <- function(config, metadata, snv_format = c("vcf", "custom"), adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+                              model_alter_noSNV = model_noSNV, chroms = chrs, batch = FALSE, standard_samples = NULL, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
   #Check the config file
@@ -67,6 +67,23 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     stop(paste0("File/s: ", files_miss, " not found"))
   }
 
+  if (!is.null(standard_samples)) {
+
+    #Check whether both standard samples and batch analysis were not selected together
+    if (batch == TRUE & !is.null(standard_samples)) {
+      stop("Both batch analysis and single sample analysis with selected standard samples cannot be performed together. Either select batch as FALSE or do not input standard samples")
+    }
+    #Check whether the samples are present in the sample table
+    if (all(standard_samples %in% sample_table[, 1]) == FALSE) {
+      stop("The input standard samples are not in metadata table.")
+    }
+    #Create standard sample table
+    standard_samples <- create_standard(standard_samples = standard_samples, sample_table = sample_table)
+
+  } else {
+    standard_samples <- RNAseqCNV:::diploid_standard[, c(1:20, 41)]
+  }
+
   #Create estimation table
   est_table <- data.frame(sample = character(),
                           gender = factor(levels = c("female", "male")),
@@ -79,7 +96,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     print("Normalizing gene expression and applying variance stabilizing transformation...")
 
     #calculate normalized count values with DESeq2 normalization method for batch of samples from the input
-    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = 1, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch = TRUE, generate_weights)
+    count_norm <- get_norm_exp(sample_table = sample_table, sample_num = 1, standard_samples = standard_samples, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch = TRUE, generate_weights)
 
     #calculate median gene expression across diploid reference and analyzed sample for batch of samples from the input
     pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData, generate_weights = generate_weights)
@@ -90,6 +107,8 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     }
   }
 
+
+
   #Run the analysis for every sample in the table
   for(i in 1:nrow(sample_table)) {
 
@@ -99,7 +118,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = "vcf", adjust = TRU
     if(batch == FALSE) {
 
       #calculate normalized count values with DESeq2 normalization method
-      count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, diploid_standard = dipl_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch, generate_weights)
+      count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, standard_samples = standard_samples, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_tab, weight_samp_prop = weight_samp_prop, batch, generate_weights)
 
       #calculate median gene expression across diploid reference and analyzed sample
       pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = referData, generate_weights = generate_weights)

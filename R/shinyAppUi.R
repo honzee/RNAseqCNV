@@ -18,11 +18,11 @@ shinyAppUi <- fluidPage(shinyjs::useShinyjs(),
                                       sidebarLayout(
 
                                         sidebarPanel(
-                                          fileInput("metadata", "metadata files"),
-                                          htmlOutput("mess_metadata"),
-                                          br(),
                                           fileInput("config", "config file"),
                                           htmlOutput("mess_config"),
+                                          br(),
+                                          fileInput("metadata", "metadata files"),
+                                          htmlOutput("mess_metadata"),
                                           br(),
                                           radioButtons("snv_format", "Select input data format for svn information", choiceNames = c("vcf", "custom table"), choiceValues = c("vcf", "custom"), inline = TRUE),
                                           br(),

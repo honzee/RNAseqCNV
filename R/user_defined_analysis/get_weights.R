@@ -4,7 +4,7 @@
 #'
 #' @param standard table with 4 compulsory columns: chr = chromosome, ENSG = ensembl gene id, sample = the sample name, alteration = CNA of that gene (+1 copy = 1, +2 = 2, -1 = -1, no CNV = 0, other = NA)
 #' @param count_dir directory with count files
-#' @param dipl_samp character vector with diploid samples
+#' @param dipl_samp character vector with diploid sample names, which should be included in the first column of metadata table
 #' @param metadata same table as the input into RNAseqCNV_wrapper function
 get_weights <- function(standard, count_dir, dipl_samp, metadata) {
 
