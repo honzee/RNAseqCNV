@@ -31,6 +31,10 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.[Diploid adjustment](#diploid_adjustment)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.[Analysis mode](#analysis_mode)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.[Gene weights generation](#weights_generation)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.[Output](#output)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.[Main figure](#main_figure)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
@@ -183,6 +187,42 @@ RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_
 ```
 or uncheck the appropriate box in the Shiny app interface.
 
+###### 2.1.5.4 Analysis mode <a name="analysis_mode"></a>
+Samples can be analyzed in two modes: batch analysis or per sample analysis. Per sample analysis with in-build standard samples for gene expression normalization and centering is the default.
+
+In batch analysis, the input samples will be used for normalization and gene expression centering (log2 fold change calculation). In this mode, at least 20 samples without high numbers of large-scale CNVs should be provided. For optimal results the samples should be of the same cancer type and library preparation. To use this mode of analysis, use batch = TRUE in the RNAseqCNV_wrapper function.
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", batch = TRUE)
+```
+
+In per sample analysis, each sample will be analyzed against the in-build (or user provided) standard samples. The in-build standard contains gene expression data from 40 ALL samples without large-scale CNVs. Using the in-build standard samples is the default method.
+
+Standard samples can also be provided as an input. Standard samples have to be included in the metadata table and their sample names have to be provided in character vector format (standard_samples parameter) in the RNAseqCNV_wrapper function.
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", batch = FALSE, standard_samples = c("standard_sample_1,", "standard_sample_2,", "standard_sample_3,"))
+```
+###### 2.1.5.5 Gene weights generation <a name="weights_generation"></a>
+Many factors apart from CNVs can affect gene expression level. Therefore, RNAseqCNV assigns a weight value based on a well-curated CNV dataset to every gene to leverage the importance of each gene in predicting the CNVs. The default, in-build gene weights are based on 426 B-ALL samples, and stem from expression level-CNV correlation and variance of the gene.
+
+To generate weights from the input data, the parameter generate weights should be set to TRUE. However, these weights take into an account only the variance of the gene expression across samples.
+
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", generate_weights = TRUE)
+```
+
+Users can also provide custom weight matrix according to the format below:
+
+| ENSG            | chromosome_name | weight     |
+|-----------------|-----------------|------------|
+| ENSG00000000419 | 20              | 121.923504 |
+| ENSG00000001167 | 6               | 8.474673   |
+| ENSG00000001497 | X               | 442.760032 |
+
+R function get_weights() in:
+```
+file.path(find.package("RNAseqCNV"), "R", "user_defined_analysis", "get_weights")
+```
+can help in acquiring weights in the same way the default RNAseqCNV weights for ALL were generated. However, since correlation between gene expression level and CNV is used for weight generation, the function requires known CNV data as an input.
 
 #### 2.2 Output <a name="output"></a>
 The output (figures and tables) of both wrapper and the Shiny app will be saved in the output directory as specified in the config file.

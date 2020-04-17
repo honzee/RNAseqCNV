@@ -14,6 +14,10 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
 
     if (avail != "all_present") {showNotification(avail , duration = NULL, id = "avail", type = "warning"); return(NULL)}
 
+    #check whether a snv_format was selected
+    if (is.null(snv_format) | !snv_format %in% c("vcf", "custom")) {
+      stop("snv_format parameter has to be either 'vcf' or 'custom'")
+    }
 
       #Create a table to write the estimation into
       est_table <- data.frame(sample = character(),

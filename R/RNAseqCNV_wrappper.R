@@ -6,6 +6,8 @@
 #' (either vcf or custom tabular data), out_dir - path to an output directory. More detailed description can be found in the package README file.
 #' @param metadata path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
 #'  More information is included in the package README file.
+#' @param snv_format character string, either "vcf" or "custom". "vcf" argument should be used when vcf files with snv information are generated with GATK. Otherwise "custom" arguments can be used when input
+#' with snv iformation has 4 required columns: chromosome, locus of the snv, overall sequencing depth of the locus and MAF. MAF is the proportion of alternative allele sequencing depth to overall sequencing depth of the locus.
 #' @param adjust logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.
 #' @param arm_lvl logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.
 #' @param estimate_lab logical value, If TRUE, CNV estimation labels will be included in the final figure.
@@ -29,7 +31,7 @@
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample.
 #' @param weight_samp_prop proportion of samples with highest weight to be kept.
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, snv_format = c("vcf", "custom"), adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               model_alter_noSNV = model_noSNV, chroms = chrs, batch = FALSE, standard_samples = NULL, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
@@ -37,6 +39,11 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format = c("vcf", "custom"),
   out_dir <- NULL
   count_dir <- NULL
   snv_dir <- NULL
+
+  #check whether a snv_format was selected
+  if (is.null(snv_format) | !snv_format %in% c("vcf", "custom")) {
+    stop("snv_format parameter has to be either 'vcf' or 'custom'")
+  }
 
   source(config, local = TRUE)
   if (is.null(out_dir) | is.null(count_dir) | is.null(snv_dir)) {
