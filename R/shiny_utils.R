@@ -64,11 +64,10 @@ get_norm_exp <- function(sample_table, sample_num, standard_samples, minReadCnt,
   gender_genes = final_mat %>% filter(ENSG %in% "ENSG00000012817")
 
   #filter genes based on reads count; top 1-q have read count > N, filter base on weight
-  keepIdx_tmp = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE) %>%
-    inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name)
+  keepIdx_tmp = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE)
 
   if (generate_weights == FALSE) {
-    keepIdx = keepIdx_tmp %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
+    keepIdx = keepIdx_tmp %>% inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
   } else {
     keepIdx = keepIdx_tmp %>% pull(id)
   }
