@@ -162,6 +162,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
 
     #select sample
     count_norm_samp <- count_norm %>% select(!!quo(sample_name)) %>% mutate(ENSG = rownames(.))
+    #count_norm_samp <- count_norm %>% select(!!quo(all_of(sample_name))) %>% mutate(ENSG = rownames(.))
 
     #join reference data and weight data
     count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refDataExp = referData, weight_table = weight_tab)

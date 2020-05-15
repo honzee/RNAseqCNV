@@ -180,7 +180,6 @@ get_train_data <- function(config, metadata, snv_format, CNV_data, CNV_data_form
     train_s = cbind(sample = sample_name, feat_tab) %>% mutate(chr = as.character(chr), arm = paste0(chr, arm))
 
     CNV_table_s = CNV_table %>% filter(sample == sample_name)
-    browser()
     train_s = train_s %>% right_join(select(CNV_table_s, sample, arm, CNV), by = c("sample", "arm")) %>% filter(chr != "Y") %>% mutate(chr_status = ifelse(CNV == 0, "dipl", "no_dipl")) %>% metr_dipl()
 
     if (i == 1) {

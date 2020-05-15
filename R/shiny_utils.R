@@ -89,6 +89,7 @@ get_norm_exp <- function(sample_table, sample_num, standard_samples, minReadCnt,
     print(paste0("Normalization completed"))
   } else {
     colnames(count_norm)[1] <- sample_n
+    colnames(count_norm)[2:length(count_norm)] <- paste0("control_", 1:ncol(count_norm)-1)
     print(paste0("Normalization for sample: ", sample_n, " completed"))
   }
 
@@ -673,13 +674,13 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
   #read the vcf files
   message("Reading in vcf file..")
-  vcf_data <- fread(vcf_file, skip = "#CHROM", header = "TRUE")
+  vcf_data <- fread(vcf_file, skip = "#CHROM", header = TRUE)
   #check whether the input is in correct format
   if (dim(vcf_data)[2] < 10) {
     vcf_final <- "Incorrect vcf file format. Incorrect number of columns"
     return(vcf_final)
   }
-  if (!identical(colnames(vcf_data)[1:9], c("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO"))) {
+  if (!identical(colnames(vcf_data)[1:9], c("#CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "FORMAT"))) {
     vcf_final <- "Incorrect vcf file format."
     return(vcf_final)
   }
