@@ -21,7 +21,7 @@
 #' @param model_gend random forest model for estimating gender based on the expression of certain genes on chromosome Y.
 #' @param model_dip random forest model for estimating whether chromosome arm is diploid.
 #' @param model_alter random forest model for estimating the CNVs on chromosome arm.
-#' @param chroms vector of chromosomes to be analyzed.
+#' @param model_alter_noSNV random forest model for estimating CNVs on chromosome arm level in case not enough SNV information is available to conctruct MAF density curve.
 #' @param batch logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples
 #' @param standard_samples character vector with sample names of samples which should be used as a standard for vst and log2 fold centering. The samples names must be included in the metadata table and batch analysis cannot be TRUE. If NULL (default), in-build standard samples will be used.
 #' @param scale_cols colour scaling for box plots according to the median of a boxplot.
@@ -32,7 +32,7 @@
 #' @param weight_samp_prop proportion of samples with highest weight to be kept. default (1)
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              model_alter_noSNV = model_noSNV, chroms = chrs, batch = FALSE, standard_samples = NULL, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+                              model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
   #Check the config file
@@ -143,7 +143,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     }
 
     #load SNP data
-    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chroms, snv_format = snv_format)
+    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, snv_format = snv_format)
 
     # if SNV data format was incorrect print out a message and skip this sample
     if (is.character(smpSNP[[1]])) {
@@ -171,7 +171,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     count_ns <- remove_par(count_ns = count_ns, par_reg = par_region)
 
     #Calculate metrics for chromosome arms
-    feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
+    feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
 
     #estimate gender
     count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
@@ -213,12 +213,12 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     }
 
     #calculate box plots
-    box_wdt <- get_box_wdt(count_ns = count_ns, chrs = chroms, scaleCols = scale_cols)
+    box_wdt <- get_box_wdt(count_ns = count_ns, scaleCols = scale_cols)
 
     #adjust y axis limits
     ylim <- adjust_ylim(box_wdt = box_wdt, ylim = c(-0.4, 0.4))
 
-    count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChromEdge, ylim = ylim, chrs = chroms)
+    count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChromEdge, ylim = ylim)
 
     count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
 
@@ -229,7 +229,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     # Create and plot the main figure
     gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
 
-    gg_snv <- plot_snv(smpSNPdata, chrs = chroms, sample_name = sample_name, estimate = estimate_lab)
+    gg_snv <- plot_snv(smpSNPdata, sample_name = sample_name, estimate = estimate_lab)
 
     fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 

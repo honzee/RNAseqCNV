@@ -89,7 +89,7 @@ get_norm_exp <- function(sample_table, sample_num, standard_samples, minReadCnt,
     print(paste0("Normalization completed"))
   } else {
     colnames(count_norm)[1] <- sample_n
-    colnames(count_norm)[2:length(count_norm)] <- paste0("control_", 1:ncol(count_norm)-1)
+    colnames(count_norm)[2:ncol(count_norm)] <- paste0("control_", 1:(ncol(count_norm)-1))
     print(paste0("Normalization for sample: ", sample_n, " completed"))
   }
 
@@ -121,7 +121,7 @@ get_med <- function(count_norm, refDataExp, weight_table, generate_weights) {
 }
 
 ####prepare snv files####
-prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv_format = c("vcf", "custom")) {
+prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, snv_format = c("vcf", "custom")) {
 
   snv_file <- pull(sample_table, snv_path)[sample_num]
   sample_n <- pull(sample_table, 1)[sample_num]
@@ -162,8 +162,8 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, chrs, snv
     }
   }
 
-  smpSNP[[sample_n]] <- snv_table %>% filter(chr %in% chrs) %>%
-    mutate(chr = factor(chr, levels=chrs), ID=paste0(chr,"-", start), sampleID=sample_n) %>% left_join(centr_ref, by = "chr") %>% mutate(arm = ifelse(start < cstart, "p", ifelse(start > cend, "q", "centr")))
+  smpSNP[[sample_n]] <- snv_table %>% filter(chr %in% c(c(1:22, "X"), paste0("chr", c(1:22, "X")))) %>% mutate(chr = sub("chr", "", chr)) %>% left_join(centr_ref, by = "chr") %>%
+    mutate(chr = factor(chr, levels=c(1:22, "X")), ID=paste0(chr,"-", start), sampleID=sample_n) %>% mutate(arm = ifelse(start < cstart, "p", ifelse(start > cend, "q", "centr")))
 
   return(smpSNP)
 }
@@ -222,7 +222,7 @@ remove_par <- function(count_ns, par_reg) {
 }
 
 ####Calculate weighted boxplot values####
-get_box_wdt <- function(count_ns, chrs, scaleCols) {
+get_box_wdt <- function(count_ns, scaleCols) {
   box_wdt <- count_ns %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = spatstat::weighted.median(x = count_nor_med,w = weight, na.rm = TRUE), low = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25),
                                                                                    high = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5) %>%
     distinct(chr, .keep_all = TRUE)
@@ -252,7 +252,7 @@ adjust_ylim <- function(box_wdt, ylim) {
 }
 
 ####Apply limit to datapoints and normalize point position####
-prep_expr <- function(count_ns, dpRatioChrEdge, ylim, chrs) {
+prep_expr <- function(count_ns, dpRatioChrEdge, ylim) {
   count_ns_final= count_ns %>% select(chr, end, count_nor_med, weight) %>%
     bind_rows(dpRatioChrEdge) %>% filter(chr %in% c(1:22, "X"), between(count_nor_med, ylim[1], ylim[2]) ) %>%
     mutate(chr=factor(chr, levels = c(1:22, "X"))) %>%
@@ -303,7 +303,7 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
 }
 
 ####plot snv density plots####
-plot_snv <- function(smpSNPdata, chrs, sample_name, estimate) {
+plot_snv <- function(smpSNPdata, sample_name, estimate) {
 
   missedChr=c(1:22, "X")[table(smpSNPdata$chr) < 15]
   if(length(missedChr) > 0){
@@ -565,10 +565,10 @@ adjust_dipl <- function(feat_tab_alt, count_ns) {
 }
 
 ####get arm metrics####
-get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref, chrs) {
+get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref) {
 
   #calculate weighted median for every chromosome and use only 1:22
-  summ_arm <- count_ns %>% filter(!is.infinite(count_nor_med)) %>% mutate(chr = factor(chr, levels = chrs)) %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>%
+  summ_arm <- count_ns %>% filter(!is.infinite(count_nor_med)) %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>% mutate(chr = factor(chr, levels = c(1:22, "X"))) %>%
     mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% group_by(chr, arm) %>%
 
     # get rid of 21 p arm
@@ -579,9 +579,7 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref, chrs) {
            low_quart = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
 
     ungroup() %>% distinct(chr, arm, arm_med, up_quart, low_quart) %>%
-    left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max, y_0.5), by = c("chr", "arm")) %>%
-
-    mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(arm_med), mean_all = mean(arm_med)) %>% ungroup() %>%
+    left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max, y_0.5), by = c("chr", "arm")) %>% mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(arm_med), mean_all = mean(arm_med)) %>% ungroup() %>%
 
     mutate(sds_median = (arm_med - mean_all)/sd, sds_025 = (low_quart - mean_all)/sd, sds_075 = (up_quart-mean_all)/sd,
            n_02_04 = sum(data.table::inrange(peakdist, 0.2, 0.4) & peak_m_dist > 0.08), n_04 = sum(data.table::inrange(peakdist, 0.4, 0.9) & peak_m_dist > 0.08)) %>%
@@ -600,7 +598,7 @@ calc_arm <- function(smpSNPdata.tmp) {
     mutate(snvOrd=1:n()) %>%
     mutate(snvNum=n(), peak_max=densityMaxY(maf),
            peak=findPeak(maf), peak_m_dist = abs(peak - 0.5), y_0.5 = find_y_0.5(maf), peakdist = find_peak_dist(maf), peakCol=ifelse(between(peak, 0.42, 0.58), 'black', 'red')) %>%
-    ungroup() %>% mutate(chr = factor(chr, levels = c(1:22, "X", "Y")))
+    ungroup() %>% filter(chr %in% c(1:22, "X")) %>% mutate(chr = factor(chr, levels = c(1:22, "X")))
   return(smpSNPdata)
 }
 
@@ -684,8 +682,8 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
     vcf_final <- "Incorrect vcf file format."
     return(vcf_final)
   }
-  if (str_detect(vcf_data[1, INFO], "DP=[0-9]+") != TRUE) {
-    vcf_final <- "Incorrect vcf file format. No depth information in INFO column"
+  if (str_detect(vcf_data[1, INFO], "DP=[0-9]+") != TRUE & str_detect(string = str_split(vcf_data[1, FORMAT], pattern = ":")[[1]][3], pattern = "DP") != TRUE) {
+    vcf_final <- "Incorrect vcf file format. No depth information in the INFO column and missing information in the FORMAT column"
     return(vcf_final)
   }
   if (str_detect(vcf_data[1, 9], "AD") != TRUE) {
@@ -699,8 +697,11 @@ vcf_to_snv <- function(vcf_file, maf_tresh = 0.01, depth_tresh = 5) {
 
   # Getting depth out of the INFO column
   message("Extracting depth..")
-  vcf_data[, depth := as.numeric(sub("DP=", "", str_extract(INFO, "DP=[0-9]+")))]
-
+  if (str_detect(vcf_data[1, INFO], "DP=[0-9]+") == TRUE) {
+    vcf_data[, depth := as.numeric(sub("DP=", "", str_extract(INFO, "DP=[0-9]+")))]
+  } else {
+    vcf_data[, depth := as.numeric(sapply(str_split(INFO2, ":"), function(x) x[3]))]
+  }
   #reference allele and alternative allele depths
   message("Extracting reference allele and alternative allele depths..")
   vcf_data[, REF_ALT_num := sapply(str_split(INFO2, ":"), function(x) x[2])]

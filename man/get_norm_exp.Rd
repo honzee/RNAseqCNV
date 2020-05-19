@@ -7,7 +7,7 @@
 get_norm_exp(
   sample_table,
   sample_num,
-  diploid_standard,
+  standard_samples,
   minReadCnt,
   samp_prop,
   weight_table,

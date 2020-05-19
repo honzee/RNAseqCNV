@@ -87,7 +87,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           incProgress(amount = 0.15, detail = "Processing SNV and count data")
 
           #load SNP data
-          smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, chrs = chrs, snv_format = snv_format, minDepth = minDepth)
+          smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, snv_format = snv_format, minDepth = minDepth)
 
           if (is.character(smpSNP[[1]])) {
             showNotification(paste0(sample_name, ": ", smpSNP[[1]]), duration = NULL, id = "not_valid_snv_info", type = "message")
@@ -117,7 +117,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           #remove PAR regions
           count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
 
-          feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref, chrs = chrs)
+          feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
 
           #estimate gender
           count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
@@ -164,12 +164,12 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           }
 
           #calculate box plots for plotting
-          box_wdt <- get_box_wdt(count_ns = count_ns, chrs = chrs, scaleCols = scaleCols)
+          box_wdt <- get_box_wdt(count_ns = count_ns, scaleCols = scaleCols)
 
           #adjust y axis limits
           ylim <- adjust_ylim(box_wdt = box_wdt, ylim = c(-0.4, 0.4))
 
-          count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChrEdge, ylim = ylim, chrs = chrs)
+          count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChrEdge, ylim = ylim)
 
           if(arm_lvl == TRUE) {
 
@@ -188,7 +188,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
 
           gg_exp <- plot_exp(count_ns_final = count_ns_final, box_wdt = box_wdt, sample_name = sample_name, ylim = ylim, estimate = estimate_lab, feat_tab_alt = feat_tab_alt, gender = gender)
 
-          gg_snv <- plot_snv(smpSNPdata, chrs = chrs, sample_name = sample_name, estimate = estimate_lab)
+          gg_snv <- plot_snv(smpSNPdata, sample_name = sample_name, estimate = estimate_lab)
 
           fig <- arrange_plots(gg_exp = gg_exp, gg_snv = gg_snv)
 

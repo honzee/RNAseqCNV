@@ -7,7 +7,7 @@
 RNAseqCNV_wrapper(
   config,
   metadata,
-  snv_format = "vcf",
+  snv_format,
   adjust = TRUE,
   arm_lvl = TRUE,
   estimate_lab = TRUE,
@@ -21,9 +21,8 @@ RNAseqCNV_wrapper(
   model_dip = model_dipl,
   model_alter = model_alt,
   model_alter_noSNV = model_noSNV,
-  chroms = chrs,
   batch = FALSE,
-  dipl_standard = diploid_standard[, c(1:20, 41)],
+  standard_samples = NULL,
   scale_cols = scaleCols,
   dpRatioChromEdge = dpRatioChrEdge,
   minDepth = 20,
@@ -38,6 +37,9 @@ RNAseqCNV_wrapper(
 
 \item{metadata}{path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
 More information is included in the package README file.}
+
+\item{snv_format}{character string, either "vcf" or "custom". "vcf" argument should be used when vcf files with snv information are generated with GATK. Otherwise "custom" arguments can be used when input
+with snv iformation has 4 required columns: chromosome, locus of the snv, overall sequencing depth of the locus and MAF. MAF is the proportion of alternative allele sequencing depth to overall sequencing depth of the locus.}
 
 \item{adjust}{logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.}
 
@@ -64,21 +66,21 @@ from the batch of input samples, if FALSE the weight will be generate from joine
 
 \item{model_alter}{random forest model for estimating the CNVs on chromosome arm.}
 
-\item{chroms}{vector of chromosomes to be analyzed.}
+\item{model_alter_noSNV}{random forest model for estimating CNVs on chromosome arm level in case not enough SNV information is available to conctruct MAF density curve.}
 
 \item{batch}{logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples}
 
+\item{standard_samples}{character vector with sample names of samples which should be used as a standard for vst and log2 fold centering. The samples names must be included in the metadata table and batch analysis cannot be TRUE. If NULL (default), in-build standard samples will be used.}
+
 \item{scale_cols}{colour scaling for box plots according to the median of a boxplot.}
 
-\item{minDepth}{minimal depth of of SNV to be kept.}
+\item{minDepth}{minimal depth of of SNV to be kept (default 20).}
 
-\item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt}
+\item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt. (default 3)}
 
-\item{samp_prop}{sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from diploid_standard parameter) and analyzed sample.}
+\item{samp_prop}{sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample. (default 0.8)}
 
-\item{weight_samp_prop}{proportion of samples with highest weight to be kept.}
-
-\item{diploid_standard}{table with 50 reference diploid samples for normalizing the data.}
+\item{weight_samp_prop}{proportion of samples with highest weight to be kept. default (1)}
 
 \item{dpRationChromEdge}{table with chromosome start and end base positions.}
 }
