@@ -45,11 +45,27 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     stop("snv_format parameter has to be either 'vcf' or 'custom'")
   }
 
+  # config file chekcing
   source(config, local = TRUE)
-  if (is.null(out_dir) | is.null(count_dir) | is.null(snv_dir)) {
+  if (is.null(count_dir) | is.null(snv_dir)) {
     stop("Incorrect config file format")
-  } else if (!dir.exists(out_dir) | !dir.exists(snv_dir) | !dir.exists(count_dir)) {
-    stop("Directory from config file does not exist")
+  }
+
+  if (is.null(out_dir)) {
+    out_dir <- file.path(getwd(), "RNAseqCNV_output")
+    warning(paste0("The output directory from config file is missing. The results will be saved in:", out_dir))
+    dir.create(out_dir)
+  } else if (!dir.exists(out_dir)) {
+    out_dir_new <- file.path(getwd(), "RNAseqCNV_output")
+    warning(paste0("The output directory:", out_dir, " does not exist. The results will be saved in:", out_dir_new))
+    out_dir <- out_dir_new
+    dir.create(out_dir)
+  }
+  if (!dir.exists(snv_dir)) {
+    stop(paste0("Incorrect information in config file. Directory:", snv_dir, " does not exist"))
+  }
+  if (!dir.exists(count_dir)) {
+    stop(paste0("Incorrect information in config file. Directory:", count_dir, " does not exist"))
   }
 
   #check metadata file
