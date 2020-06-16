@@ -109,7 +109,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           incProgress(amount = 0.1, detail = "Analysing expression data")
 
           #select sample
-          count_norm_samp <- count_norm %>% select(!!quo(sample_name)) %>% mutate(ENSG = rownames(.))
+          count_norm_samp <- count_norm %>% select(!!quo(tidyselect::all_of(sample_name))) %>% mutate(ENSG = rownames(.))
 
           #join reference data and weight datacount_trans
           count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refData, weight_table)
@@ -120,7 +120,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
 
           #estimate gender
-          count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
+          count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(tidyselect::all_of(sample_name))) %>% spread(key = ENSG, value = !!quo(tidyselect::all_of(sample_name)))
           gender <- ifelse(predict(model_gender, newdata = count_ns_gend, type = "response") > 0.5, "male", "female")
 
           #preprocess data for karyotype estimation and diploid level adjustement
