@@ -12,8 +12,7 @@ shinyAppServer <- function(input, output, session) {
     conf_lines <- readLines(input$config$datapath)
     if (length(conf_lines) == 3 &
         any(grepl("count_dir", conf_lines)) &
-        any(grepl("snv_dir", conf_lines)) &
-        any(grepl("out_dir", conf_lines))) {
+        any(grepl("snv_dir", conf_lines))) {
       source(input$config$datapath)
     } else {
       {showNotification("Config file in incorrect format", duration = NULL, id = "not_valid_config", type = "message"); return(NULL)}
@@ -34,10 +33,16 @@ shinyAppServer <- function(input, output, session) {
       }
 
       #check out_dir
-      if (!dir.exists(out_dir)) {
-        out <- "not_found"
-      } else {
-        out <- out_dir
+      if (is.null(out_dir)) {
+        browser()
+        out <- file.path(getwd(), "RNAseqCNV_output")
+        showNotification(paste0("The output directory in the config file is missing. The results will be saved in:", out), duration = NULL, id = "out_dir_create_null", type = "warning")
+        dir.create(out)
+      } else if (!dir.exists(out_dir)) {
+        out_dir_new <- file.path(getwd(), "RNAseqCNV_output")
+        showNotification(paste0("The output directory:", out_dir, " does not exist. The results will be saved in:", out_dir_new), duration = NULL, id = "out_dir_create", type = "warning")
+        out <- out_dir_new
+        dir.create(out)
       }
 
       react_val$config <- c(count_dir = count, snv_dir = snv, out_dir = out)

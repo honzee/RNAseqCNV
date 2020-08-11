@@ -24,6 +24,7 @@
 #' @param model_alter_noSNV random forest model for estimating CNVs on chromosome arm level in case not enough SNV information is available to conctruct MAF density curve.
 #' @param batch logical value, if TRUE, the samples will be normalized together as a batch, also gene expression median will be calculated from these samples
 #' @param standard_samples character vector with sample names of samples which should be used as a standard for vst and log2 fold centering. The samples names must be included in the metadata table and batch analysis cannot be TRUE. If NULL (default), in-build standard samples will be used.
+#' @param CNV_matrix logical value, if TRUE, additional matrix of called CNVs for all analyzed samples will be output
 #' @param scale_cols colour scaling for box plots according to the median of a boxplot.
 #' @param dpRationChromEdge table with chromosome start and end base positions.
 #' @param minDepth minimal depth of of SNV to be kept (default 20).
@@ -32,7 +33,7 @@
 #' @param weight_samp_prop proportion of samples with highest weight to be kept. default (1)
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+                              model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, CNV_matrix = FALSE, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
   #Check the config file
@@ -212,11 +213,20 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
         bind_rows(feat_tab_alt)
     }
 
-    feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.85) %>% group_by(chr) %>% mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
+    if (CNV_matrix == TRUE) {
+      if (i == 1) {
+        alt_matrix <- feat_tab_alt %>% mutate(sample = sample_name, chr_arm = paste0(chr, arm)) %>% select(sample, chr_arm, alteration) %>% pivot_wider(names_from = chr_arm, values_from = alteration)
+      } else {
+        sample_alt <- feat_tab_alt %>% mutate(sample = sample_name, chr_arm = paste0(chr, arm)) %>% select(sample, chr_arm, alteration) %>% pivot_wider(names_from = chr_arm, values_from = alteration)
+        alt_matrix <- bind_rows(alt_matrix, sample_alt)
+      }
+    }
+
+    feat_tab_alt <- colour_code(feat_tab_alt, conf_tresh = 0.85) %>% group_by(chr) %>%
+      mutate(alteration = as.character(alteration), chr_alt = as.character(ifelse(length(unique(alteration)) == 1, unique(alteration), "ab")))
 
     #estimate karyotype
     kar_list <- gen_kar_list(feat_tab_alt = feat_tab_alt, sample_name = sample_name, gender = gender)
-
     est_table <- rbind(est_table, kar_list)
     write.table(x = est_table, file = file.path(out_dir, "estimation_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
     write.table(x = cbind(est_table , status = "not checked", comments = "none"), file = file.path(out_dir, "manual_an_table.tsv"), sep = "\t", quote = FALSE, row.names = FALSE)
@@ -284,6 +294,9 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
       }
 
       print(paste0("Analysis for sample: ", sample_name, " finished"))
+  }
+  if (CNV_matrix == TRUE) {
+    write.table(alt_matrix, file = file.path(out_dir, "alteration_matrix.tsv"), sep = "\t", row.names = FALSE)
   }
 }
 
