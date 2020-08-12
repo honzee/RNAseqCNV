@@ -8,10 +8,11 @@ shinyAppServer <- function(input, output, session) {
   #do the directories from the input exist?
   observe({
   if (!is.null(input$config)) {
-    #is the confit in correct format?
+    #is the config in correct format?
     conf_lines <- readLines(input$config$datapath)
     if (length(conf_lines) == 3 &
         any(grepl("count_dir", conf_lines)) &
+        any(grepl("out_dir", conf_lines)) &
         any(grepl("snv_dir", conf_lines))) {
       source(input$config$datapath)
     } else {
@@ -34,7 +35,6 @@ shinyAppServer <- function(input, output, session) {
 
       #check out_dir
       if (is.null(out_dir)) {
-        browser()
         out <- file.path(getwd(), "RNAseqCNV_output")
         showNotification(paste0("The output directory in the config file is missing. The results will be saved in:", out), duration = NULL, id = "out_dir_create_null", type = "warning")
         dir.create(out)
@@ -43,6 +43,8 @@ shinyAppServer <- function(input, output, session) {
         showNotification(paste0("The output directory:", out_dir, " does not exist. The results will be saved in:", out_dir_new), duration = NULL, id = "out_dir_create", type = "warning")
         out <- out_dir_new
         dir.create(out)
+      } else {
+        out <- out_dir
       }
 
       react_val$config <- c(count_dir = count, snv_dir = snv, out_dir = out)
@@ -233,6 +235,7 @@ shinyAppServer <- function(input, output, session) {
 
   #read default estimation table in case config file is changed
   observeEvent(react_val$config, {
+
     table_exists <- file.exists(paste0(react_val$config["out_dir"], "/", "estimation_table.tsv"))
 
     if (table_exists == TRUE) {
@@ -271,7 +274,7 @@ shinyAppServer <- function(input, output, session) {
 
     figs = sub(".*/", "", list.files(path = react_val$config["out_dir"], pattern = "_CNV_main_fig.png", recursive = TRUE, full.names = FALSE))
 
-    if(length(figs) == 0) return(NULL)
+    if(length(figs) == 0 | is.null(figs)) return(NULL)
 
     sample_figs <- sub("_CNV_main_fig.png", "", figs)
     fig_sam <- sample_figs[match(sample_figs, pull(react_val$metadata[, 1]))]
@@ -312,6 +315,7 @@ shinyAppServer <- function(input, output, session) {
 
   #render image based on the select button####
   output$main_fig <- renderImage({
+
     list(src = paste0(react_val$config["out_dir"], "/", input$sel_sample, "/", input$sel_sample,  "_CNV_main_fig.png"),
          contentType = "image/png",
          width = "100%",

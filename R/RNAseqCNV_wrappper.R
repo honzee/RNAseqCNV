@@ -178,6 +178,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     smpSNPdata_a_2 <- calc_arm(smpSNPdata.tmp)
 
     #select sample
+    # count_norm_samp <- count_norm %>% select(!!quo(tidyselect::all_of(sample_name))) %>% mutate(ENSG = rownames(.))
     count_norm_samp <- count_norm %>% select(!!quo(tidyselect::all_of(sample_name))) %>% mutate(ENSG = rownames(.))
 
     #join reference data and weight data
@@ -190,7 +191,8 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
 
     #estimate gender
-    count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(tidyselect::all_of(sample_name))) %>% spread(key = ENSG, value = !!quo(tidyselect::all_of(sample_name)))
+    # count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(tidyselect::all_of(sample_name))) %>% spread(key = ENSG, value = !!quo(tidyselect::all_of(sample_name)))
+    count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(sample_name)) %>% spread(key = ENSG, value = !!quo(sample_name))
     gender <- ifelse(predict(model_gend, newdata = count_ns_gend, type = "response") > 0.5, "male", "female")
 
     #preprocess data for karyotype estimation and diploid level adjustement
