@@ -214,9 +214,11 @@ remove_par <- function(count_ns, par_reg) {
   #### get rid of PAR regions
 
   parX = filter(par_reg, chr == "X")
+  parX <- as.data.frame(parX)
   count_ns = count_ns %>% filter(chr != "X" | ! data.table::inrange(start, parX[1, 1], parX[1, 2]) & ! data.table::inrange(start, parX[2, 1], parX[2, 2]) &
                                  ! data.table::inrange(end, parX[1, 1], parX[1, 2]) & !  data.table::inrange(end, parX[2, 1], parX[2, 2]))
   parY = filter(par_reg, chr == "Y")
+  parY <- as.data.frame(parY)
   count_ns = count_ns %>% filter(chr != "Y" | ! data.table::inrange(start, parY[1, 1], parY[1, 2]) & ! data.table::inrange(start, parY[2, 1], parY[2, 2]) &
                              ! data.table::inrange(end, parY[1, 1], parY[1, 2]) & !  data.table::inrange(end, parY[2, 1], parY[2, 2]))
 }

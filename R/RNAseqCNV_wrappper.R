@@ -160,7 +160,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     }
 
     #load SNP data
-    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, snv_format = snv_format)
+    smpSNP <- prepare_snv(sample_table = sample_table, sample_num = i, centr_ref = centr_ref, snv_format = snv_format, minDepth = minDepth)
 
     # if SNV data format was incorrect print out a message and skip this sample
     if (is.character(smpSNP[[1]])) {
