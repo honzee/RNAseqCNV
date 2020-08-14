@@ -28,12 +28,13 @@
 #' @param scale_cols colour scaling for box plots according to the median of a boxplot.
 #' @param dpRationChromEdge table with chromosome start and end base positions.
 #' @param minDepth minimal depth of of SNV to be kept (default 20).
+#' @param mafRange numeric value, two numerical values specifying the range of MAFs of SNVs to be kept (default c(0.05, 0.9))
 #' @param minReadCnt numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt. (default 3)
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample. (default 0.8)
 #' @param weight_samp_prop proportion of samples with highest weight to be kept. default (1)
 #' @export RNAseqCNV_wrapper
 RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
-                              model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, CNV_matrix = FALSE, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+                              model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, CNV_matrix = FALSE, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
   #Check the config file
@@ -169,7 +170,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     }
 
     #filter SNP data base on dpSNP database
-    smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keptSNP, minDepth = minDepth)
+    smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keptSNP, minDepth = minDepth, mafRange = mafRange)
 
     #analyze chromosome-level metrics (out-dated)
     smpSNPdata <- calc_chrom_lvl(smpSNPdata.tmp)

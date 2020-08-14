@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, batch, standard_samples, scaleCols, dpRatioChrEdge, minDepth=20, minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, batch, standard_samples, scaleCols, dpRatioChrEdge, minDepth=20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
 
     #Is any neccessary input missing?
@@ -95,7 +95,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           }
 
           #filter SNP data base on dpSNP database
-          smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keepSNP, minDepth = minDepth)
+          smpSNPdata.tmp <- filter_snv(smpSNP[[1]], keepSNP = keepSNP, minDepth = minDepth, mafRange = mafRange)
 
           #analyze chromosome-level metrics
           smpSNPdata <- calc_chrom_lvl(smpSNPdata.tmp)

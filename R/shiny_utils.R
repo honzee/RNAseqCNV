@@ -170,11 +170,13 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, snv_forma
 
 
 ####filter SNVs of interest for samples###
-filter_snv <- function(one_smpSNP, keepSNP, minDepth) {
-  smpSNPdata.tmp= one_smpSNP %>% dplyr::select(sampleID, ID, maf, chr, start, depth, arm) %>%  filter(
-    data.table::inrange(maf, 0.05, 0.9),
-    depth > minDepth,
-    ID %in% keepSNP) %>% filter(chr != "Y")
+filter_snv <- function(one_smpSNP, keepSNP, minDepth, mafRange) {
+
+  smpSNPdata.tmp= one_smpSNP %>% dplyr::select(sampleID, ID, maf, chr, start, depth, arm) %>%
+    filter(data.table::inrange(maf, mafRange[1], mafRange[2]), depth > minDepth) %>% filter(chr != "Y")
+  if (keepSNP != FALSE) {
+    smpSNPdata.tmp <- smpSNPdata.tmp %>% filter(ID %in% keepSNP)
+  }
   return(smpSNPdata.tmp)
 }
 
