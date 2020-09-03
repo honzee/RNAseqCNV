@@ -35,6 +35,8 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.[Gene weights generation](#weights_generation)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6.[CNV matrix](#CNV_matrix)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.[Output](#output)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.[Main figure](#main_figure)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
@@ -223,6 +225,22 @@ R function get_weights() in:
 file.path(find.package("RNAseqCNV"), "R", "user_defined_analysis", "get_weights")
 ```
 can help in acquiring weights in the same way the default RNAseqCNV weights for ALL were generated. However, since correlation between gene expression level and CNV is used for weight generation, the function requires known CNV data as an input.
+
+###### 2.1.5.6 CNV matrix <a name="CNV_matrix"></a>
+Optionally, the estimated CNVs can be also output in a matrix format, where samples are ordered in rows and chromosome arms in columns.
+
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", CNV_matrix = TRUE)
+```
+
+Shortened example:
+
+| sample          | 1p | 1q | 2q | 2p | 3p | 3q | 4p | 4q | 5q | 5p | 6p | 6q |
+|-----------------|----|----|----|----|----|----|----|----|----|----|----|----|
+| sample_1 | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  |
+| sample_2 | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  |
+| sample_3 | 0  | 0  | 0  | 0  | 0  | 0  | 1  | 1  | 0  | 0  | 1  | 1  |
+| sample_4 | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 0  | 1  | 1  |
 
 #### 2.2 Output <a name="output"></a>
 The output (figures and tables) of both wrapper and the Shiny app will be saved in the output directory as specified in the config file.

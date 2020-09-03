@@ -2,7 +2,7 @@
 #'
 #' Wrapper for generating figures and tables for CNV estimation from RNA-seq
 #'
-#' @param config R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
+#' @param config path to R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
 #' (either vcf or custom tabular data), out_dir - path to an output directory. More detailed description can be found in the package README file.
 #' @param metadata path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
 #'  More information is included in the package README file.
