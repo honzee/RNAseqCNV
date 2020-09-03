@@ -174,7 +174,7 @@ filter_snv <- function(one_smpSNP, keepSNP, minDepth, mafRange) {
 
   smpSNPdata.tmp= one_smpSNP %>% dplyr::select(sampleID, ID, maf, chr, start, depth, arm) %>%
     filter(data.table::inrange(maf, mafRange[1], mafRange[2]), depth > minDepth) %>% filter(chr != "Y")
-  if (keepSNP != FALSE) {
+  if (keepSNP[1] != FALSE) {
     smpSNPdata.tmp <- smpSNPdata.tmp %>% filter(ID %in% keepSNP)
   }
   return(smpSNPdata.tmp)
@@ -732,7 +732,7 @@ create_weights <- function(pickGeneDFall) {
 #create standard table from input file names
 create_standard <- function(standard_samples, sample_table) {
 
-  dipl_samples <- match(standard_samples, sample_table[, 1])
+  dipl_samples <- match(standard_samples, pull(sample_table, 1))
 
   for (i in dipl_samples) {
 

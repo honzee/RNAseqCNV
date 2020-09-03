@@ -99,7 +99,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
       stop("Both batch analysis and single sample analysis with selected standard samples cannot be performed together. Either select batch as FALSE or do not input standard samples")
     }
     #Check whether the samples are present in the sample table
-    if (all(standard_samples %in% sample_table[, 1]) == FALSE) {
+    if (all(standard_samples %in% pull(sample_table, 1)) == FALSE) {
       stop("The input standard samples are not in metadata table.")
     }
     #Create standard sample table
