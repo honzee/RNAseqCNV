@@ -396,7 +396,7 @@ plot_exp_zoom <- function(count_ns_final, centr_res, plot_chr, estimate, feat_ta
   gg_expr_zoom = ggplot(data=count_ns_chr) + ylim(c(-0.5, 0.5)) + ylab("Normalized expression") +
     geom_point(aes(x = normPos, y = count_nor_med, size = weight), alpha=0.6) +
     scale_size(range = c(1,5)) +
-    geom_smooth(aes(x = normPos, y = count_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x') +
+    geom_smooth(aes(x = normPos, y = count_nor_med, weight = weight), alpha = 0.5, size = 0.5, method = "loess", formula = 'y ~ x', se = FALSE) +
     annotate("segment", x = 0, xend = 1, y = 0, yend = 0,
              colour = "red", alpha = 0.85) +
     scale_x_continuous(expand = c(0,0)) +
