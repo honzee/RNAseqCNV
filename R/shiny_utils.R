@@ -573,7 +573,7 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref) {
 
   #calculate weighted median for every chromosome and use only 1:22
   summ_arm <- count_ns %>% filter(!is.infinite(count_nor_med)) %>% filter(chr %in% c(1:22, "X")) %>% left_join(centr_ref, by = "chr") %>% mutate(chr = factor(chr, levels = c(1:22, "X"))) %>%
-    mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% group_by(chr, arm) %>%
+    mutate(arm = ifelse(end < cstart, "p", ifelse(end > cend, "q", "centr"))) %>% filter(arm != "centr") %>% group_by(chr, arm) %>%
 
     # get rid of 21 p arm
     filter(!(chr == 21 & arm == "p")) %>%
