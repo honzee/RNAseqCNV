@@ -23,16 +23,18 @@ RNAseqCNV_wrapper(
   model_alter_noSNV = model_noSNV,
   batch = FALSE,
   standard_samples = NULL,
+  CNV_matrix = FALSE,
   scale_cols = scaleCols,
   dpRatioChromEdge = dpRatioChrEdge,
   minDepth = 20,
+  mafRange = c(0.05, 0.9),
   minReadCnt = 3,
   samp_prop = 0.8,
   weight_samp_prop = 1
 )
 }
 \arguments{
-\item{config}{R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
+\item{config}{path to R script assigning paths to needed directories into variables: 1. count_dir - path to a directory with count files, 2. snv_dir - path to a directory with files with snv information
 (either vcf or custom tabular data), out_dir - path to an output directory. More detailed description can be found in the package README file.}
 
 \item{metadata}{path to a metadata table with three columns. First colum: sample names, second column: file names of count files, third column: file names of snv files. There should be no header.
@@ -72,9 +74,13 @@ from the batch of input samples, if FALSE the weight will be generate from joine
 
 \item{standard_samples}{character vector with sample names of samples which should be used as a standard for vst and log2 fold centering. The samples names must be included in the metadata table and batch analysis cannot be TRUE. If NULL (default), in-build standard samples will be used.}
 
+\item{CNV_matrix}{logical value, if TRUE, additional matrix of called CNVs for all analyzed samples will be output}
+
 \item{scale_cols}{colour scaling for box plots according to the median of a boxplot.}
 
 \item{minDepth}{minimal depth of of SNV to be kept (default 20).}
+
+\item{mafRange}{numeric value, two numerical values specifying the range of MAFs of SNVs to be kept (default c(0.05, 0.9))}
 
 \item{minReadCnt}{numeric value value used for filtering genes with low expression according to to formula: at least samp_prop*100 percent of samples have more reads than minReadCnt. (default 3)}
 

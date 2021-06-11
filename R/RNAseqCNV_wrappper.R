@@ -11,10 +11,13 @@
 #' @param adjust logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.
 #' @param arm_lvl logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.
 #' @param estimate_lab logical value, If TRUE, CNV estimation labels will be included in the final figure.
-#' @param referData table, reference data for gene annotation with ensamble ids
-#' @param keptSNP vector of realiable SNPs to keep for the MAF graphs
-#' @param par_region table with pseudoautosomal regions. These regions will be filtered out.
-#' @param centr_refer table with chromosomal centromeric locations.
+#' @param genome_version character string, either "hg19" or "GRCh38" (default). The gene annotation, kept SNPs, pseudoautosomal regions and centromeric regions will be
+#' selected accordingly to the the chosen version. If the information is supplied by the user by any of these arguments - referData, keptSNP, par_region, centr_refer,
+#' the internal data will be overwritten.
+#' @param gene_annotation table, reference data for gene annotation with ensamble ids
+#' @param SNP_to_keep vector of realiable SNPs to keep for the MAF graphs
+#' @param par_regions table with pseudoautosomal regions. These regions will be filtered out.
+#' @param centromeric_regions table with chromosomal centromeric locations.
 #' @param weight_tab table with per-gene weight for calculating weighted quantiles for the boxplots in the main figure.
 #' @param generate_weights logical value, if TRUE, weights for calculating weighted quantiles will be contructed from variance and depth of the analyzed cohort of samples. If batch is TRUE, the weights will be analyzed
 #' from the batch of input samples, if FALSE the weight will be generate from joined diploid standard and analyzed sample.
@@ -33,7 +36,7 @@
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample. (default 0.8)
 #' @param weight_samp_prop proportion of samples with highest weight to be kept. default (1)
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, referData = refDataExp, keptSNP = keepSNP, par_region = par_reg, centr_refer = centr_ref, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, genome_version = "GRCh38", gene_annotation = NULL, SNP_to_keep = NULL, par_regions = NULL, centromeric_regions = NULL, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, CNV_matrix = FALSE, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
@@ -47,7 +50,7 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     stop("snv_format parameter has to be either 'vcf' or 'custom'")
   }
 
-  # config file chekcing
+  #config file chekcing
   source(config, local = TRUE)
   if (is.null(count_dir) | is.null(snv_dir)) {
     stop("Incorrect config file format")
@@ -74,6 +77,33 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
   metadata_tab = fread(metadata, header = FALSE)
   if (ncol(metadata_tab) != 3) {
     stop("The number of columns in metadata table should be 3")
+  }
+
+  #Assign reference data
+  if (genome_version == "GRCh38") {
+    referData = gene_annot_GRCh38
+    keptSNP = dbSNP_GRCh38
+    par_region = pseudoautosomal_regions_GRCh38
+    centr_ref = centromeres_GRCh38
+  } else if (genome_version == "hg19") {
+    referData = gene_annot_hg19
+    keptSNP = dbSNP_hg19
+    par_region = pseudoautosomal_regions_hg19
+    centr_ref = centromeres_hg19
+  }
+
+  #If user provided data, use those instead
+  if (!is.null(gene_annotation)) {
+    referData = gene_annotation
+  }
+  if (!is.null(SNP_to_keep)) {
+    keptSNP = SNP_to_keep
+  }
+  if(!is.null(par_regions)) {
+    par_reg = par_regions
+  }
+  if(!is.null(centromeric_regions)) {
+    centr_ref = centromeric_regions
   }
 
   #Create sample table
@@ -302,5 +332,4 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     write.table(alt_matrix, file = file.path(out_dir, "alteration_matrix.tsv"), sep = "\t", row.names = FALSE)
   }
 }
-
 
