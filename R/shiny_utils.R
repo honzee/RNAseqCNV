@@ -227,8 +227,8 @@ remove_par <- function(count_ns, par_reg) {
 
 ####Calculate weighted boxplot values####
 get_box_wdt <- function(count_ns, scaleCols) {
-  box_wdt <- count_ns %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = spatstat::weighted.median(x = count_nor_med,w = weight, na.rm = TRUE), low = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25),
-                                                                                   high = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5) %>%
+  box_wdt <- count_ns %>% filter(chr %in% c(1:22, "X"))  %>% group_by(chr) %>% mutate(med_weig = weighted_quantile(x = count_nor_med, w = weight, probs = 0.5, na.rm = TRUE), low = weighted_quantile(x = count_nor_med, w = weight, probs = 0.25),
+                                                                                   high = weighted_quantile(x = count_nor_med, w = weight, probs = 0.75), IQR = abs(high - low), max = high + IQR*1.5, min = low - IQR*1.5) %>%
     distinct(chr, .keep_all = TRUE)
 
   colours <- c()
@@ -578,9 +578,9 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref) {
     # get rid of 21 p arm
     filter(!(chr == 21 & arm == "p")) %>%
 
-    mutate(arm_med = spatstat::weighted.median(x = count_nor_med,w = weight, na.rm = TRUE),
-           up_quart = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.75, na.rm = TRUE),
-           low_quart = spatstat::weighted.quantile(x = count_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
+    mutate(arm_med = weighted_quantile(x = count_nor_med,w = weight, probs = 0.5, na.rm = TRUE),
+           up_quart = weighted_quantile(x = count_nor_med, w = weight, probs = 0.75, na.rm = TRUE),
+           low_quart = weighted_quantile(x = count_nor_med, w = weight, probs = 0.25, na.rm = TRUE)) %>%
 
     ungroup() %>% distinct(chr, arm, arm_med, up_quart, low_quart) %>%
     left_join(distinct(.data = smpSNPdata, chr, arm, peakdist, peak_m_dist, peak_max, y_0.5), by = c("chr", "arm")) %>% mutate(chr = factor(chr, levels = c(1:22, "X")), sd = sd(arm_med), mean_all = mean(arm_med)) %>% ungroup() %>%
@@ -760,4 +760,50 @@ create_standard <- function(standard_samples, sample_table) {
 
   }
   return(count_table)
+}
+
+#' Function for calculating weighted quantiles
+#'
+#' The code is taken from package spatstat, version 1.63.3. The function is no longer part of spatstat package
+#' @param x vector of numerical values
+#' @param w vector of numerical weights, need to be larger than one
+#' @param probs the quantile to be calculated
+#' @param na.rm logical; remove NA values
+weighted_quantile <- function (x, w, probs = seq(0, 1, 0.25), na.rm = TRUE) {
+  x <- as.numeric(as.vector(x))
+  w <- as.numeric(as.vector(w))
+  if (anyNA(x) || anyNA(w)) {
+    ok <- !(is.na(x) | is.na(w))
+    x <- x[ok]
+    w <- w[ok]
+  }
+  stopifnot(all(w >= 0))
+  if (all(w == 0))
+    stop("All weights are zero", call. = FALSE)
+  oo <- order(x)
+  x <- x[oo]
+  w <- w[oo]
+  Fx <- cumsum(w)/sum(w)
+  result <- numeric(length(probs))
+  for (i in seq_along(result)) {
+    p <- probs[i]
+    lefties <- which(Fx <= p)
+    if (length(lefties) == 0) {
+      result[i] <- x[1]
+    }
+    else {
+      left <- max(lefties)
+      result[i] <- x[left]
+      if (Fx[left] < p && left < length(x)) {
+        right <- left + 1
+        y <- x[left] + (x[right] - x[left]) * (p - Fx[left])/(Fx[right] -
+                                                                Fx[left])
+        if (is.finite(y))
+          result[i] <- y
+      }
+    }
+  }
+  names(result) <- paste0(format(100 * probs, trim = TRUE),
+                          "%")
+  return(result)
 }
