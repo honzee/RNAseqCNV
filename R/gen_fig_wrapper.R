@@ -1,5 +1,5 @@
 # Wrapper for generating figures for analysis and preview figure
-gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, refData, keepSNP, par_reg, centr_ref, weight_table, generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, batch, standard_samples, scaleCols, dpRatioChrEdge, minDepth=20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
+gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, to_analyse, adjust, arm_lvl, estimate_lab, genome_version, weight_table, generate_weights, model_gender, model_dipl, model_alt, model_noSNV, chrs, batch, standard_samples, scaleCols, dpRatioChrEdge, minDepth=20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
 
     #Is any neccessary input missing?
@@ -17,6 +17,19 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
     #check whether a snv_format was selected
     if (is.null(snv_format) | !snv_format %in% c("vcf", "custom")) {
       stop("snv_format parameter has to be either 'vcf' or 'custom'")
+    }
+
+    #choose the genome version according to the user
+    if (genome_version == "GRCh38") {
+      refDataExp = gene_annot_GRCh38
+      keepSNP = dbSNP_GRCh38
+      par_reg = pseudoautosomal_regions_GRCh38
+      centr_ref = centromeres_GRCh38
+    } else if (genome_version == "hg19") {
+      refDataExp = gene_annot_hg19
+      keepSNP = dbSNP_hg19
+      par_reg = pseudoautosomal_regions_hg19
+      centr_ref = centromeres_hg19
     }
 
       #Create a table to write the estimation into
@@ -113,7 +126,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
           count_norm_samp <- count_norm %>% select(!!quo(sample_name)) %>% mutate(ENSG = rownames(.))
 
           #join reference data and weight datacount_trans
-          count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refData, weight_table)
+          count_ns <- count_transform(count_ns = count_norm_samp, pickGeneDFall, refDataExp = refDataExp, weight_table)
 
           #remove PAR regions
           count_ns <- remove_par(count_ns = count_ns, par_reg = par_reg)
