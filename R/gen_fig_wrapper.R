@@ -20,11 +20,11 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
     }
 
     #choose the genome version according to the user
-    if (genome_version == "GRCh38") {
-      refDataExp = gene_annot_GRCh38
-      keepSNP = dbSNP_GRCh38
-      par_reg = pseudoautosomal_regions_GRCh38
-      centr_ref = centromeres_GRCh38
+    if (genome_version == "hg38") {
+      refDataExp = gene_annot_hg38
+      keepSNP = dbSNP_hg38
+      par_reg = pseudoautosomal_regions_hg38
+      centr_ref = centromeres_hg38
     } else if (genome_version == "hg19") {
       refDataExp = gene_annot_hg19
       keepSNP = dbSNP_hg19

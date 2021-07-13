@@ -67,7 +67,7 @@ get_norm_exp <- function(sample_table, sample_num, standard_samples, minReadCnt,
   keepIdx_tmp = final_mat %>% mutate(keep_gene = apply(.[, -1], MARGIN = 1, FUN = function(x) sum(x > minReadCnt) > (length(x) * samp_prop)), id = row_number()) %>% filter(keep_gene == TRUE)
 
   if (generate_weights == FALSE) {
-    keepIdx = keepIdx_tmp %>% inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight > weight_chr_quant) %>% pull(id)
+    keepIdx = keepIdx_tmp %>% inner_join(weight_table, by = "ENSG") %>% group_by(chromosome_name) %>% mutate(weight_chr_quant = quantile(weight, 1 - weight_samp_prop)) %>% filter(weight >= weight_chr_quant) %>% pull(id)
   } else {
     keepIdx = keepIdx_tmp %>% pull(id)
   }
@@ -266,15 +266,15 @@ prep_expr <- function(count_ns, dpRatioChrEdge, ylim) {
 }
 
 filter_expr <- function(count_ns_final, cutoff = 0.6) {
-  count_ns_final <- count_ns_final %>% filter(weight > quantile(weight, cutoff, na.rm = TRUE))
+  count_ns_final <- count_ns_final %>% filter(weight >= quantile(weight, cutoff, na.rm = TRUE))
 }
 
 ####plot expression boxplot and point plot####
 plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_tab_alt, gender) {
   gp_expr <- ggplot() + ylim(ylim) + ylab("log2 fold change of expression") +
     scale_fill_identity()+
-    geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = weight), alpha = 0.32, show.legend = FALSE)+
-    scale_size(range = c(2, 6)) +
+    geom_point(data = count_ns_final, aes(x = normPos, y = count_nor_med, size = 0.2), alpha = 0.32, show.legend = FALSE)+
+    #scale_size(range = c(2, 6)) +
     #scale_alpha(range = c(0.22, 0.4)) +
     geom_boxplot(data = box_wdt, aes(ymin = min, lower = low, middle = med_weig, upper = high, ymax = max, fill=medianCol, x = pos), alpha=0.75, outlier.colour = NA, stat = "identity", show.legend = FALSE)+
     geom_hline(yintercept = 0, colour = "red")+

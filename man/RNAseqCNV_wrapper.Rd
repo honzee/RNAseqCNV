@@ -11,10 +11,11 @@ RNAseqCNV_wrapper(
   adjust = TRUE,
   arm_lvl = TRUE,
   estimate_lab = TRUE,
-  referData = refDataExp,
-  keptSNP = keepSNP,
-  par_region = par_reg,
-  centr_refer = centr_ref,
+  genome_version = "hg38",
+  gene_annotation = NULL,
+  SNP_to_keep = NULL,
+  par_regions = NULL,
+  centromeric_regions = NULL,
   weight_tab = weight_table,
   generate_weights = FALSE,
   model_gend = model_gender,
@@ -49,13 +50,17 @@ with snv iformation has 4 required columns: chromosome, locus of the snv, overal
 
 \item{estimate_lab}{logical value, If TRUE, CNV estimation labels will be included in the final figure.}
 
-\item{referData}{table, reference data for gene annotation with ensamble ids}
+\item{genome_version}{character string, either "hg19" or "hg38" (default). The gene annotation, kept SNPs, pseudoautosomal regions and centromeric regions will be
+selected accordingly to the the chosen version. If the information is supplied by the user by any of these arguments - referData, keptSNP, par_region, centr_refer,
+the internal data will be overwritten.}
 
-\item{keptSNP}{vector of realiable SNPs to keep for the MAF graphs}
+\item{gene_annotation}{table, reference data for gene annotation with ensamble ids}
 
-\item{par_region}{table with pseudoautosomal regions. These regions will be filtered out.}
+\item{SNP_to_keep}{vector of realiable SNPs to keep for the MAF graphs}
 
-\item{centr_refer}{table with chromosomal centromeric locations.}
+\item{par_regions}{table with pseudoautosomal regions. These regions will be filtered out.}
+
+\item{centromeric_regions}{table with chromosomal centromeric locations.}
 
 \item{weight_tab}{table with per-gene weight for calculating weighted quantiles for the boxplots in the main figure.}
 

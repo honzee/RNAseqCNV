@@ -11,7 +11,7 @@
 #' @param adjust logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.
 #' @param arm_lvl logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.
 #' @param estimate_lab logical value, If TRUE, CNV estimation labels will be included in the final figure.
-#' @param genome_version character string, either "hg19" or "GRCh38" (default). The gene annotation, kept SNPs, pseudoautosomal regions and centromeric regions will be
+#' @param genome_version character string, either "hg19" or "hg38" (default). The gene annotation, kept SNPs, pseudoautosomal regions and centromeric regions will be
 #' selected accordingly to the the chosen version. If the information is supplied by the user by any of these arguments - referData, keptSNP, par_region, centr_refer,
 #' the internal data will be overwritten.
 #' @param gene_annotation table, reference data for gene annotation with ensamble ids
@@ -36,7 +36,7 @@
 #' @param samp_prop sample proportion which is required to have at least minReadCnt reads for a gene. The samples inlcude the diploid reference (from standard_samples parameter) and analyzed sample. (default 0.8)
 #' @param weight_samp_prop proportion of samples with highest weight to be kept. default (1)
 #' @export RNAseqCNV_wrapper
-RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, genome_version = "GRCh38", gene_annotation = NULL, SNP_to_keep = NULL, par_regions = NULL, centromeric_regions = NULL, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
+RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_lvl = TRUE, estimate_lab = TRUE, genome_version = "hg38", gene_annotation = NULL, SNP_to_keep = NULL, par_regions = NULL, centromeric_regions = NULL, weight_tab = weight_table, generate_weights = FALSE, model_gend = model_gender, model_dip = model_dipl, model_alter = model_alt,
                               model_alter_noSNV = model_noSNV, batch = FALSE, standard_samples = NULL, CNV_matrix = FALSE, scale_cols = scaleCols, dpRatioChromEdge = dpRatioChrEdge, minDepth = 20, mafRange = c(0.05, 0.9), minReadCnt = 3, samp_prop = 0.8, weight_samp_prop = 1) {
 
   print("Analysis initiated")
@@ -80,11 +80,11 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
   }
 
   #Assign reference data
-  if (genome_version == "GRCh38") {
-    referData = gene_annot_GRCh38
-    keptSNP = dbSNP_GRCh38
-    par_region = pseudoautosomal_regions_GRCh38
-    centr_ref = centromeres_GRCh38
+  if (genome_version == "hg38") {
+    referData = gene_annot_hg38
+    keptSNP = dbSNP_hg38
+    par_region = pseudoautosomal_regions_hg38
+    centr_ref = centromeres_hg38
   } else if (genome_version == "hg19") {
     referData = gene_annot_hg19
     keptSNP = dbSNP_hg19
@@ -278,7 +278,8 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
 
     count_ns_final <- prep_expr(count_ns = count_ns, dpRatioChrEdge = dpRatioChromEdge, ylim = ylim)
 
-    count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
+    # filter low weighted genes for clearer visualization
+    #count_ns_final <- filter_expr(count_ns_final = count_ns_final, cutoff = 0.6)
 
     #Create per-sample folder for figures
     chr_dir = file.path(out_dir, sample_name)
