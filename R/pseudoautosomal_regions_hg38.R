@@ -10,4 +10,4 @@
 #'   \item{reg}{pseudoautosomal region}
 #' }
 #'  @source \url{https://www.ncbi.nlm.nih.gov/grc/human/}
-"pseudoautosomal_regions_GRCh38"
+"pseudoautosomal_regions_hg38"

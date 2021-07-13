@@ -10,4 +10,4 @@
 #'   \item{end}{end genome location}
 #'   \item{ENSG}{ensembl gene id}
 #' }
-"gene_annot_GRCh38"
+"gene_annot_hg38"
