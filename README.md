@@ -25,17 +25,19 @@ This R package is for analysis, visualization and automatic estimation of large-
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.[Basic function parameters](#basic_params)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.[Arm-level figures](#arm_level_figures_param)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1.[Genome version](#genome_version)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.[Estimation labels](#estimation_labels)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.[Arm-level figures](#arm_level_figures_param)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.[Diploid adjustment](#diploid_adjustment)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;3.[Estimation labels](#estimation_labels)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.[Analysis mode](#analysis_mode)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;4.[Diploid adjustment](#diploid_adjustment)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.[Gene weights generation](#weights_generation)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;5.[Analysis mode](#analysis_mode)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
-&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6.[CNV matrix](#CNV_matrix)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;6.[Gene weights generation](#weights_generation)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
+
+&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;7.[CNV matrix](#CNV_matrix)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;2.[Output](#output)<br><TD style="FONT-SIZE:13px; COLOR:#000000; LINE-HEIGHT:20px; FONT-FAMILY:Arial,Helvetica,sans-serif">
 
@@ -160,21 +162,27 @@ The header names should follow the format below:
 
 Explanation of basic wrapper function parameters and Shiny app options.
 
-###### 2.1.5.1 Arm-level figures <a name="arm_level_figures_param"></a>
+###### 2.1.5.1 Genome version <a name="genome_version"></a>
+RNAseqCNV provides reference data for genome versions hg19 and hg38 (default). The genome version specific internal data include - gene information, dbSNP SNP list, centromere location and pseudoautosomal regions.
+```
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", genom_version = hg38)
+```
+
+###### 2.1.5.2 Arm-level figures <a name="arm_level_figures_param"></a>
 The plotting of arm-level figures increases the per-sample runtime significantly. You can disable the this by:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", arm_lvl = FALSE)
 ```
 or uncheck the appropriate box in the Shiny app interface.
 
-###### 2.1.5.2 Estimation labels <a name="estimation_labels"></a>
+###### 2.1.5.3 Estimation labels <a name="estimation_labels"></a>
 The CNV estimation labels can be removed from the figures with:
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", estimate_lab = FALSE)
 ```
 or by unchecking the appropriate box in the Shiny app interface.
 
-###### 2.1.5.3 Diploid adjustment <a name="diploid_adjustment"></a>
+###### 2.1.5.4 Diploid adjustment <a name="diploid_adjustment"></a>
 Some samples may have high proportion of chromosomes with CNVs, such as the one below:
 
 ![Figure with high number of CNVs without adjustment](./README/figures/near_hap_nonadj.png)
@@ -189,7 +197,7 @@ RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_
 ```
 or uncheck the appropriate box in the Shiny app interface.
 
-###### 2.1.5.4 Analysis mode <a name="analysis_mode"></a>
+###### 2.1.5.5 Analysis mode <a name="analysis_mode"></a>
 Samples can be analyzed in two modes: batch analysis or per sample analysis. Per sample analysis with in-build standard samples for gene expression normalization and centering is the default.
 
 In batch analysis, the input samples will be used for normalization and gene expression centering (log2 fold change calculation). In this mode, at least 20 samples without high numbers of large-scale CNVs should be provided. For optimal results the samples should be of the same cancer type and library preparation. To use this mode of analysis, use batch = TRUE in the RNAseqCNV_wrapper function.
@@ -203,7 +211,7 @@ Standard samples can also be provided as an input. Standard samples have to be i
 ```
 RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", batch = FALSE, standard_samples = c("standard_sample_1,", "standard_sample_2,", "standard_sample_3,"))
 ```
-###### 2.1.5.5 Gene weights generation <a name="weights_generation"></a>
+###### 2.1.5.6 Gene weights generation <a name="weights_generation"></a>
 Many factors apart from CNVs can affect gene expression level. Therefore, RNAseqCNV assigns a weight value based on a well-curated CNV dataset to every gene to leverage the importance of each gene in predicting the CNVs. The default, in-build gene weights are based on 426 B-ALL samples, and stem from expression level-CNV correlation and variance of the gene.
 
 To generate weights from the input data, the parameter generate weights should be set to TRUE. However, these weights take into an account only the variance of the gene expression across samples.
@@ -226,7 +234,7 @@ file.path(find.package("RNAseqCNV"), "R", "user_defined_analysis", "get_weights"
 ```
 can help in acquiring weights in the same way the default RNAseqCNV weights for ALL were generated. However, since correlation between gene expression level and CNV is used for weight generation, the function requires known CNV data as an input.
 
-###### 2.1.5.6 CNV matrix <a name="CNV_matrix"></a>
+###### 2.1.5.7 CNV matrix <a name="CNV_matrix"></a>
 Optionally, the estimated CNVs can be also output in a matrix format, where samples are ordered in rows and chromosome arms in columns.
 
 ```
