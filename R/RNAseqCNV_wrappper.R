@@ -11,7 +11,7 @@
 #' @param adjust logical value, If TRUE, expression is centered according to the random forest estimated diploid chromosomes. Default = TRUE.
 #' @param arm_lvl logical value, If TRUE, arm_lvl figures will be printed (increases run-time significantly). Defaul = TRUE.
 #' @param estimate_lab logical value, If TRUE, CNV estimation labels will be included in the final figure.
-#' @param genome_version character string, either "hg19" or "hg38" (default). The gene annotation, kept SNPs, pseudoautosomal regions and centromeric regions will be
+#' @param genome_version character string, either "hg19" or "hg38" (default). The gene annotation, kept SNPs, pseudoautosomal regions, centromeric regions and standard samples will be
 #' selected accordingly to the the chosen version. If the information is supplied by the user by any of these arguments - referData, keptSNP, par_region, centr_refer,
 #' the internal data will be overwritten.
 #' @param gene_annotation table, reference data for gene annotation with ensamble ids

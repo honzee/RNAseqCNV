@@ -25,11 +25,12 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
       keepSNP = dbSNP_hg38
       par_reg = pseudoautosomal_regions_hg38
       centr_ref = centromeres_hg38
+      diploid_standard = diploid_standard_hg38
     } else if (genome_version == "hg19") {
       refDataExp = gene_annot_hg19
       keepSNP = dbSNP_hg19
       par_reg = pseudoautosomal_regions_hg19
-      centr_ref = centromeres_hg19
+      diploid_standard = diploid_standard_hg19
     }
 
       #Create a table to write the estimation into
