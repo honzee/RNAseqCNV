@@ -3,7 +3,7 @@
 \docType{data}
 \name{gene_annot_hg38}
 \alias{gene_annot_hg38}
-\title{Gene annotation build GRCh38.}
+\title{Gene annotation build hg38.}
 \format{
 A data with 60616 rows and 4 columns:
 \describe{
@@ -18,6 +18,6 @@ gene_annot_hg38
 }
 \description{
 A table containg information on chromosomes, start and end locations of ensembl gene ids.
-The data was obtained from genome build GRCh38
+The data was obtained from genome build hg38
 }
 \keyword{datasets}

@@ -1,6 +1,6 @@
-#' Pseudoautosomal regions, genome GRCh38.
+#' Pseudoautosomal regions, genome hg38.
 #'
-#' A table with pseudoautosomal information, build GRCh 38
+#' A table with pseudoautosomal information, build hg38
 #'
 #' @format A data table with 4 rows and 4 columns:
 #' \describe{

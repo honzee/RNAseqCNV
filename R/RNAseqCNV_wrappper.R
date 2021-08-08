@@ -85,11 +85,13 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     keptSNP = dbSNP_hg38
     par_region = pseudoautosomal_regions_hg38
     centr_ref = centromeres_hg38
+    diploid_standard = diploid_standard_hg38
   } else if (genome_version == "hg19") {
     referData = gene_annot_hg19
     keptSNP = dbSNP_hg19
     par_region = pseudoautosomal_regions_hg19
     centr_ref = centromeres_hg19
+    diploid_standard = diploid_standard_hg19
   }
 
   #If user provided data, use those instead
@@ -136,7 +138,9 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
     standard_samples <- create_standard(standard_samples = standard_samples, sample_table = sample_table)
 
   } else {
-    standard_samples <- RNAseqCNV:::diploid_standard[, c(1:20, 41)]
+    # select first twenty samples from the standard only for the sake of faster of the vst calculation
+    cols_ind <- c(1:20, ncol(diploid_standard))
+    standard_samples <- diploid_standard[, ..cols_ind]
   }
 
   #Create estimation table

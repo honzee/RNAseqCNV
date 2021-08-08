@@ -3,7 +3,7 @@
 \docType{data}
 \name{pseudoautosomal_regions_hg38}
 \alias{pseudoautosomal_regions_hg38}
-\title{Pseudoautosomal regions, genome GRCh38.}
+\title{Pseudoautosomal regions, genome hg38.}
 \format{
 A data table with 4 rows and 4 columns:
 \describe{
@@ -18,6 +18,6 @@ A data table with 4 rows and 4 columns:
 pseudoautosomal_regions_hg38
 }
 \description{
-A table with pseudoautosomal information, build GRCh 38
+A table with pseudoautosomal information, build hg38
 }
 \keyword{datasets}
