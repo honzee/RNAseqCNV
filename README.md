@@ -72,6 +72,14 @@ install.packages("devtools")
 devtools::install_github(repo = "honzee/RNAseqCNV")
 ```
 
+Docker image based on rocker/rstudio with RNAseqCNV was also created to facilitate easy deployment: https://hub.docker.com/repository/docker/honzik1/rnaseqcnv. To use the image, docker needs to be installed. For more information on docker, please head to: https://www.docker.com/. The rstudio instance can be deployed by:
+
+```
+docker run -it -p 8787:8787 -v /local/path/to/needed/directory/:/where/the/directory/will/be/mounted/ -e PASSWORD=1234 honzik/rnaseqcnv:0.0.1
+```
+
+Users can then find the running Rstudio session in browser under: http://localhost:8787/. The login would be *rstudio* and password *1234*.
+
 ### 2. Functionality <a name="functionality"></a>
 The results are generated either by a wrapper function: RNAseqCNV_wrapper() or through a Shiny app which is deployed by the launchApp() function. The RNAseqCNV_wrapper() provides more flexibility in terms of function parameters. The Shiny app on the other hand enables easier browsing and checking of the results.
 
@@ -165,7 +173,7 @@ Explanation of basic wrapper function parameters and Shiny app options.
 ###### 2.1.5.1 Genome version <a name="genome_version"></a>
 RNAseqCNV provides reference data for genome versions hg19 and hg38 (default). The genome version specific internal data include - gene information, dbSNP SNP list, centromere location and pseudoautosomal regions.
 ```
-RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", genom_version = hg38)
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", genom_version = "hg38")
 ```
 
 ###### 2.1.5.2 Arm-level figures <a name="arm_level_figures_param"></a>

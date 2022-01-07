@@ -322,7 +322,7 @@ plot_snv <- function(smpSNPdata, sample_name, estimate) {
     yAxisMax=snvNumDensityMaxY %>% filter(snvNum > 100) %>% .$peak_max %>% max()
     snvNumDF = snvNumDensityMaxY %>% mutate(x=0.5, y=yAxisMax*1.05)
     peakdist_dat = snvNumDensityMaxY %>% mutate(x = 0.5, y = yAxisMax*1.1, label = round(peakdist, 3))
-    gp.maf=ggplot(data=smpSNPdata) + xlab("Mutant allele frequency") + ylab("Density") +
+    gp.maf=ggplot(data=smpSNPdata) + xlab("Minor allele frequency") + ylab("Density") +
       geom_density(aes(maf, color=peakCol), show.legend = FALSE) +
       geom_vline(xintercept = c(1/3, 0.5, 2/3), alpha = 0.4, size = 0.5)+
       geom_label(data = peakdist_dat, aes(x, y, label = label), fill = "white", color = "black", vjust=0)+
@@ -558,12 +558,12 @@ find_y_0.5 <- function(vec) {
 ####adjust for diploid level based on diploid chromosomes####
 adjust_dipl <- function(feat_tab_alt, count_ns) {
 
-  if (sum(feat_tab_alt$chr_status == "dipl") < 1) {
+  if (sum(feat_tab_alt$chr_status == "dipl", na.rm = TRUE) < 1) {
     print("Unable to adjust expression level")
     return(count_ns)
   }
 
-  baseline_shift = median(feat_tab_alt$arm_med[feat_tab_alt$chr_status == "dipl"])
+  baseline_shift = median(feat_tab_alt$arm_med[feat_tab_alt$chr_status == "dipl"], na.rm = TRUE)
   count_ns$count_nor_med <- count_ns$count_nor_med - baseline_shift
   return(count_ns)
 }
