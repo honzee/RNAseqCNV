@@ -30,6 +30,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
       refDataExp = gene_annot_hg19
       keepSNP = dbSNP_hg19
       par_reg = pseudoautosomal_regions_hg19
+      centr_ref = centromeres_hg19
       diploid_standard = diploid_standard_hg19
     }
 
@@ -47,7 +48,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
         incProgress(detail = "Normalizing samples as a batch..")
 
         #calculate normalized count values with DESeq2 normalization method for batch of samples from the input
-        count_norm <- get_norm_exp(sample_table = sample_table, sample_num = 1, standard_samples = standard_samples, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop, batch = batch, generate_weights = generate_weights)
+        count_norm <- get_norm_exp(sample_table = sample_table, sample_num = 1, standard_samples = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop, batch = batch, generate_weights = generate_weights)
 
         #calculate median gene expression across diploid reference and analyzed sample for batch of samples from the input
         pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = refDataExp, generate_weights = generate_weights)
@@ -78,7 +79,7 @@ gen_fig_wrapper <- function(config, metadata, snv_format, avail, sample_table, t
             incProgress(amount = 0.5, detail = "Normalizing gene expression and calculating medians for each gene")
 
             #calculate normalized count values with DESeq2 normalization method
-            count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, standard_samples = standard_samples, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop, batch = batch, generate_weights = generate_weights)
+            count_norm <- get_norm_exp(sample_table = sample_table, sample_num = i, standard_samples = diploid_standard, minReadCnt = minReadCnt, samp_prop = samp_prop, weight_table = weight_table, weight_samp_prop = weight_samp_prop, batch = batch, generate_weights = generate_weights)
 
             #calculate median gene expression across diploid reference and analyzed sample
             pickGeneDFall <- get_med(count_norm = count_norm, refDataExp = refDataExp, generate_weights = generate_weights)

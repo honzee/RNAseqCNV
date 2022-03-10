@@ -75,7 +75,7 @@ devtools::install_github(repo = "honzee/RNAseqCNV")
 Docker image based on rocker/rstudio with RNAseqCNV was also created to facilitate easy deployment: https://hub.docker.com/repository/docker/honzik1/rnaseqcnv. To use the image, docker needs to be installed. For more information on docker, please head to: https://www.docker.com/. The rstudio instance can be deployed by:
 
 ```
-docker run -it -p 8787:8787 -v /local/path/to/needed/directory/:/where/the/directory/will/be/mounted/ -e PASSWORD=1234 honzik/rnaseqcnv:0.0.1
+docker run -it -p 8787:8787 -v /local/path/to/needed/directory/:/where/the/directory/will/be/mounted/ -e PASSWORD=1234 honzik1/rnaseqcnv:0.0.1
 ```
 
 Users can then find the running Rstudio session in browser under: http://localhost:8787/. The login would be *rstudio* and password *1234*.

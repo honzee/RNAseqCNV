@@ -303,7 +303,7 @@ plot_exp <- function(count_ns_final, box_wdt, sample_name, ylim, estimate, feat_
           legend.justification = "top",
           legend.text = element_text(size = 15),
           legend.title = element_text(size = 17)) +
-    guides(size = FALSE)
+    guides(size = "none")
 }
 
 ####plot snv density plots####
