@@ -63,7 +63,7 @@ shinyAppUi <- fluidPage(shinyjs::useShinyjs(),
 
                                     )
                            ),
-                           tabPanel("Manual CNV analysis", icon = icon("fa-3x"),
+                           tabPanel("Manual CNV analysis", icon = icon("fa-3x", verify_fa = FALSE),
 
                                     fluidPage(
 
