@@ -266,7 +266,6 @@ shinyAppServer <- function(input, output, session) {
 
   # list all figures in output directory
   fig_sam <- reactive({
-
     input$config
     react_val$check
 
@@ -293,6 +292,7 @@ shinyAppServer <- function(input, output, session) {
     figures <- fig_sam()
 
     #the check is completed only if the samples in the given directory match with samples in estimation tables and and samples from the input
+
       if (all(figures %in% react_val$def_table$sample) & all(figures %in% react_val$man_table$sample) & all(figures %in% pull(sample_table(), 1))) {
         react_val$check <- TRUE
       } else {
@@ -303,11 +303,127 @@ shinyAppServer <- function(input, output, session) {
 
   observe({
     if (react_val$check == TRUE) {
-      shinyjs::show(selector = '#tabs li a[data-value="Manual CNV analysis"]')
-      shinyjs::show(selector = '#tabs li a[data-value="Export"]')
+      shiny::appendTab(inputId = "tabs", tab = tabPanel("Manual CNV analysis", icon = icon("fa-3x", verify_fa = FALSE),
+
+                                                        fluidPage(
+
+                                                          tags$style(type = "text/css",
+                                                                     "label {font-size: 16px;}"
+                                                          ),
+
+                                                          titlePanel("Manual Analysis"),
+                                                          br(),
+                                                          br(),
+                                                          fluidRow(
+                                                            column(3,
+                                                                   wellPanel(
+                                                                     h3("Select Figures"),
+                                                                     br(),
+                                                                     uiOutput("figure_select"),
+                                                                     br(),
+                                                                     uiOutput("chr_sel"),
+                                                                     br(),
+                                                                     h3("Estimation correction"),
+                                                                     br(),
+                                                                     br(),
+                                                                     uiOutput("gender_select"),
+                                                                     br(),
+                                                                     br(),
+                                                                     uiOutput("chromn_text"),
+                                                                     br(),
+                                                                     br(),
+                                                                     uiOutput("alt_text"),
+                                                                     htmlOutput("examp"),
+                                                                     htmlOutput("war_message"),
+                                                                     br(),
+                                                                     br(),
+                                                                     uiOutput("comments_text"),
+                                                                     br(),
+                                                                     br(),
+                                                                     fluidRow(
+                                                                       column(6,
+                                                                              uiOutput("default")
+                                                                       ),
+                                                                       column(3, offset = 3,
+                                                                              uiOutput("save_butt")
+                                                                       )
+                                                                     ),
+                                                                     fluidRow(
+                                                                       column(3, offset = 9,
+                                                                              htmlOutput("status"))
+                                                                     )
+                                                                   )
+                                                            ),
+                                                            column(9,
+                                                                   fluidRow(
+                                                                     column(2,
+                                                                            uiOutput("prev_butt")
+                                                                     ),
+                                                                     column(8,
+                                                                            htmlOutput("sample_num")
+                                                                     ),
+                                                                     column(2,
+                                                                            uiOutput("next_butt"))
+                                                                   ),
+                                                                   fluidRow(
+                                                                     column(12,
+                                                                            imageOutput("main_fig", width = "100%", height = "auto")
+                                                                     )
+                                                                   ),
+                                                                   conditionalPanel(condition = "output.chr_choices != null",
+                                                                                    fluidRow(
+                                                                                      column(2,
+                                                                                             uiOutput("prev_butt_chr")
+                                                                                      ),
+                                                                                      column(2, offset = 8,
+                                                                                             uiOutput("next_butt_chr"))
+                                                                                    ),
+                                                                                    fluidRow(
+                                                                                      column(12,
+                                                                                             imageOutput("chr_fig", width = "100%", height = "auto")
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
+      )
+      shiny::appendTab(inputId = "tabs", tab = tabPanel("Export",
+
+                                                        fluidPage(
+
+                                                          titlePanel("Export analyzed table"),
+
+                                                          sidebarLayout(
+
+                                                            sidebarPanel(
+
+                                                              uiOutput("columns"),
+                                                              br(),
+                                                              br(),
+                                                              uiOutput("format"),
+                                                              br(),
+                                                              br(),
+                                                              shinyDirButton("export", label = "Export to selected directory", title = "Select directory")
+
+                                                            ),
+
+                                                            mainPanel(
+
+                                                              h2("Output preview"),
+                                                              br(),
+                                                              br(),
+                                                              tableOutput("prev_tab")
+
+                                                            )
+                                                          )
+                                                        )
+                                                      )
+                                                    )
     } else {
-      shinyjs::hide(selector = '#tabs li a[data-value="Manual CNV analysis"]')
-      shinyjs::hide(selector = '#tabs li a[data-value="Export]')
+      shiny::removeTab(inputId = "tabs", target = "Manual CNV analysis")
+      shiny::removeTab(inputId = "tabs", target = "Export")
     }
   })
 
@@ -725,5 +841,4 @@ shinyAppServer <- function(input, output, session) {
           react_val$check <- TRUE
     }
   })
-
 }

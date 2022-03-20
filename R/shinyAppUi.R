@@ -1,11 +1,5 @@
 ####Multi-tab user interface####
-shinyAppUi <- fluidPage(shinyjs::useShinyjs(),
-
-  # tags for hiding the tabs before the analysis
-  tags$head(tags$style(HTML("#tabs li a[data-value = 'Manual CNV analysis'], #tabs li a[data-value = 'Export'] {
-                            display: none;}"))),
-
-  navbarPage("RNAseq CNA analysis", id = "tabs",
+shinyAppUi <- navbarPage("RNAseq CNA analysis", id = "tabs",
 
                            #Input tab
 
@@ -58,126 +52,9 @@ shinyAppUi <- fluidPage(shinyjs::useShinyjs(),
                                           ),
                                           imageOutput("chr_fig_prev",  width = "100%", height = "auto")
 
-                                        )
-                                      )
-
-                                    )
-                           ),
-                           tabPanel("Manual CNV analysis", icon = icon("fa-3x", verify_fa = FALSE),
-
-                                    fluidPage(
-
-                                      tags$style(type = "text/css",
-                                                 "label {font-size: 16px;}"
-                                      ),
-
-                                      titlePanel("Manual Analysis"),
-                                      br(),
-                                      br(),
-                                      fluidRow(
-                                        column(3,
-                                               wellPanel(
-                                                 h3("Select Figures"),
-                                                 br(),
-                                                 uiOutput("figure_select"),
-                                                 br(),
-                                                 uiOutput("chr_sel"),
-                                                 br(),
-                                                 h3("Estimation correction"),
-                                                 br(),
-                                                 br(),
-                                                 uiOutput("gender_select"),
-                                                 br(),
-                                                 br(),
-                                                 uiOutput("chromn_text"),
-                                                 br(),
-                                                 br(),
-                                                 uiOutput("alt_text"),
-                                                 htmlOutput("examp"),
-                                                 htmlOutput("war_message"),
-                                                 br(),
-                                                 br(),
-                                                 uiOutput("comments_text"),
-                                                 br(),
-                                                 br(),
-                                                 fluidRow(
-                                                   column(6,
-                                                          uiOutput("default")
-                                                   ),
-                                                   column(3, offset = 3,
-                                                          uiOutput("save_butt")
-                                                   )
-                                                 ),
-                                                 fluidRow(
-                                                   column(3, offset = 9,
-                                                          htmlOutput("status"))
-                                                 )
-                                               )
-                                        ),
-                                        column(9,
-                                               fluidRow(
-                                                 column(2,
-                                                        uiOutput("prev_butt")
-                                                 ),
-                                                 column(8,
-                                                        htmlOutput("sample_num")
-                                                 ),
-                                                 column(2,
-                                                        uiOutput("next_butt"))
-                                               ),
-                                               fluidRow(
-                                                 column(12,
-                                                        imageOutput("main_fig", width = "100%", height = "auto")
-                                                 )
-                                               ),
-                                               conditionalPanel(condition = "output.chr_choices != null",
-                                                                fluidRow(
-                                                                  column(2,
-                                                                         uiOutput("prev_butt_chr")
-                                                                  ),
-                                                                  column(2, offset = 8,
-                                                                         uiOutput("next_butt_chr"))
-                                                                ),
-                                                                fluidRow(
-                                                                  column(12,
-                                                                         imageOutput("chr_fig", width = "100%", height = "auto")
-                                                                  )
-                                                                )
-                                               )
-                                        )
-                                      )
-                                    )
-                           ),
-                           tabPanel("Export",
-
-                                    fluidPage(
-
-                                      titlePanel("Export analyzed table"),
-
-                                      sidebarLayout(
-
-                                        sidebarPanel(
-
-                                          uiOutput("columns"),
-                                          br(),
-                                          br(),
-                                          uiOutput("format"),
-                                          br(),
-                                          br(),
-                                          shinyDirButton("export", label = "Export to selected directory", title = "Select directory")
-
-                                        ),
-
-                                        mainPanel(
-
-                                          h2("Output preview"),
-                                          br(),
-                                          br(),
-                                          tableOutput("prev_tab")
-
-                                        )
-
-                                      )
-                                    ))
+        )
+      )
+    )
   )
 )
+

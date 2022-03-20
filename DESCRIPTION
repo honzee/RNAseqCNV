@@ -1,6 +1,6 @@
 Package: RNAseqCNV
 Title: A package for CNV analysis from RNA-seq data in B-cell acute lymphoblastic leukaemia
-Version: 1.2.1
+Version: 1.2.2
 Authors@R: 
     c(person(given = "Jan",
            family = "Barinka",
@@ -31,7 +31,6 @@ Imports:
 	ggpubr,
 	randomForest,
 	shinyFiles,
-	shinyjs,
 	DESeq2
 RoxygenNote: 7.1.1
 Depends: 
