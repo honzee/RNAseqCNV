@@ -173,7 +173,7 @@ Explanation of basic wrapper function parameters and Shiny app options.
 ###### 2.1.5.1 Genome version <a name="genome_version"></a>
 RNAseqCNV provides reference data for genome versions hg19 and hg38 (default). The genome version specific internal data include - gene information, dbSNP SNP list, centromere location and pseudoautosomal regions.
 ```
-RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", genom_version = "hg38")
+RNAseqCNV_wrapper(config = "path/to/config", metadata = "path/to/metadata", snv_format = "vcf", genome_version = "hg38")
 ```
 
 ###### 2.1.5.2 Arm-level figures <a name="arm_level_figures_param"></a>
