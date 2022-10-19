@@ -98,7 +98,7 @@ launchApp()
 Both the wrapper and the Shiny app receive the same required input. Per-gene read counts and SNV mutant allele frequency (MAF) are used to produce the results. Therefore, two types of information are needed for each sample. Examples of the input files can be found in the package directory. Use the following command to locate the package directory:
 
 ```
-file.path(find.package("RNAseqCNV"), "inst", "extdata")
+system.file("extdata", package = "RNAseqCNV")
 ```
 
 
