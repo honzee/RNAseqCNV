@@ -598,6 +598,7 @@ get_arm_metr <- function(count_ns, smpSNPdata, sample_name, centr_ref) {
 #### calculate chromosomal statistics ####
 # calc arm extended
 calc_arm <- function(smpSNPdata.tmp) {
+
   smpSNPdata <- smpSNPdata.tmp %>% group_by(chr, arm) %>% arrange(chr, desc(depth) ) %>%
     mutate(snvOrd=1:n()) %>%
     mutate(snvNum=n(), peak_max=densityMaxY(maf),

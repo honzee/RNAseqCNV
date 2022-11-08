@@ -208,7 +208,6 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
 
     #analyze chromosome-level metrics (out-dated)
     smpSNPdata <- calc_chrom_lvl(smpSNPdata.tmp)
-
     #arm-level metrics
     smpSNPdata_a_2 <- calc_arm(smpSNPdata.tmp)
 
@@ -224,6 +223,15 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
 
     #Calculate metrics for chromosome arms
     feat_tab <- get_arm_metr(count_ns = count_ns, smpSNPdata = smpSNPdata_a_2, sample_name = sample_names, centr_ref = centr_ref)
+
+    #Export the per-arm median of log2 fold change of expression
+    log2fold_arm_s <- select(feat_tab, chr, arm, arm_med) %>% mutate(arm_med = round(arm_med, 3))
+    colnames(log2fold_arm_s)[3] <- sample_name
+    if (i == 1) {
+      log2fold_arm <- log2fold_arm_s
+    } else {
+      log2fold_arm <- merge(log2fold_arm, log2fold_arm_s, by = c('chr', 'arm'))
+    }
 
     #estimate gender
     # count_ns_gend <- count_norm_samp %>% filter(ENSG %in% "ENSG00000012817") %>%  select(ENSG, !!quo(tidyselect::all_of(sample_name))) %>% spread(key = ENSG, value = !!quo(tidyselect::all_of(sample_name)))
@@ -333,6 +341,12 @@ RNAseqCNV_wrapper <- function(config, metadata, snv_format, adjust = TRUE, arm_l
 
       print(paste0("Analysis for sample: ", sample_name, " finished"))
   }
+
+  #Order the per-arm median of log2 fold change table and write it into a file
+  log2fold_arm <- log2fold_arm %>% mutate(arm = factor(arm, levels = c('p', 'q'))) %>% arrange(chr, arm)
+  write.table(log2fold_arm, file = file.path(out_dir, "log2_fold_change_per_arm.tsv"), sep = "\t", row.names = FALSE)
+
+  #Write an estimated matrix into a file
   if (CNV_matrix == TRUE) {
     write.table(alt_matrix, file = file.path(out_dir, "alteration_matrix.tsv"), sep = "\t", row.names = FALSE)
   }
