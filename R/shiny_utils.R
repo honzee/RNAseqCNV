@@ -162,7 +162,7 @@ prepare_snv <- function(sample_table, centr_ref, sample_num, minDepth, snv_forma
     }
   }
 
-  smpSNP[[sample_n]] <- snv_table %>% filter(chr %in% c(c(1:22, "X"), paste0("chr", c(1:22, "X")))) %>% mutate(chr = sub("chr", "", chr)) %>% left_join(centr_ref, by = "chr") %>%
+  smpSNP[[as.character(sample_n)]] <- snv_table %>% filter(chr %in% c(c(1:22, "X"), paste0("chr", c(1:22, "X")))) %>% mutate(chr = sub("chr", "", chr)) %>% left_join(centr_ref, by = "chr") %>%
     mutate(chr = factor(chr, levels=c(1:22, "X")), ID=paste0(chr,"-", start), sampleID=sample_n) %>% mutate(arm = ifelse(start < cstart, "p", ifelse(start > cend, "q", "centr")))
 
   return(smpSNP)
